@@ -1,0 +1,4 @@
+model,accuracy,precision,recall,alerts,cost,n,dataset_version
+全部不通知（多數類）,0.846,0.0,0.0,0,1500,977,notify-eval-2026.01
+現行規則 conf≥0.7,0.725,0.291,0.553,285,872,977,notify-eval-2026.01
+定版模型 notify-hgb-2026.01 @0.2,0.927,0.701,0.92,197,179,977,notify-eval-2026.01

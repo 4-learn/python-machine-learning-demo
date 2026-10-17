@@ -1,0 +1,8 @@
+[project]
+name = "ml-course-common"
+version = "2026.1"
+description = "Python 機器學習實務（2026）共用模組：讀資料、特徵、切割"
+requires-python = ">=3.11"
+
+[tool.setuptools]
+py-modules = ["common"]

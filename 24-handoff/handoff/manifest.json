@@ -1,0 +1,37 @@
+{
+ "dataset_version": "notify-eval-2026.01",
+ "annotation_version": "chen-v1",
+ "task": "這個事件要不要通知現場安全主管（needs_notify：1＝要、0＝不用）",
+ "eval_set": {
+  "file": "eval-set.csv",
+  "sha256": "da3b027cb3b5395474338cd493275458cd998e30ea51e30998effefd4689c099",
+  "rows": 977,
+  "incidents": 635,
+  "positives": 150,
+  "period": "2025-12-29～2026-01-11",
+  "columns": [
+   "event_id",
+   "incident_id",
+   "confidence",
+   "duration_sec",
+   "light_lux",
+   "people_nearby",
+   "tenure_days",
+   "prior_violations_30d",
+   "hour",
+   "zone",
+   "shift",
+   "site",
+   "needs_notify"
+  ]
+ },
+ "source": {
+  "file": "data/events.csv",
+  "sha256_12": "80bf78ce18a6"
+ },
+ "cost": "10×漏報 + 1×誤報",
+ "provenance": "合成資料（tools/build_data.py，seed 20260112），不代表任何真實工地或人員；標籤模擬陳主任事後認定，約 2% 標錯。",
+ "use": "整份是保留集：只用來比較，不用來調提示或門檻。調提示用 dev-sample.csv。",
+ "frozen_at": "2026-02-11",
+ "frozen_by": "ML 課 24 節"
+}

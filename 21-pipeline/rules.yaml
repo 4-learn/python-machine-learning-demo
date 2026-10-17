@@ -1,0 +1,22 @@
+# 21｜政策規則（由上往下比對，第一條符合就生效）。
+# 模型只回答「像不像該通知的事件」；公司政策寫在這裡，改政策不用改程式。
+# 門檻不在這裡：門檻是 config/notify.yaml 的 threshold.value（12 節選、陳主任核准）。
+version: rules-2026.01
+rules:
+  - name: 休息區不通知
+    why: 公司政策：休息區可以脫帽（標註規則同一條）
+    when: {zone: [休息區]}
+    action: log
+  - name: 模型建議通知
+    why: 機率 >= 核准門檻
+    when: {model_notify: true}
+    action: notify
+  - name: 累犯列入日報
+    why: 30 天內已有 3 次需通知紀錄，列入隔天約談名單（01 節的政策規則）
+    when: {min_prior_violations_30d: 3}
+    action: report
+  - name: 預設
+    why: 其他事件只記錄
+    action: log
+# 同一人在同一工地，冷卻時間內的第二則通知併入前一則（舊版「連續 N 張才發」的改寫）
+cooldown_sec: 300

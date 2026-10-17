@@ -1,0 +1,8 @@
+# 21｜攝影機與現場設定（實務上來自設備清單與照度計；課程中由 demo 給定）。
+# light_lux：該攝影機照度計在各班別的代表讀數。people_nearby：課程簡化成固定值 2（全資料中位數）。
+cameras:
+  cam1: {site: A, zone: 出入口, light_lux: {早班: 650, 中班: 630, 夜班: 120}}
+  cam2: {site: B, zone: 物料區, light_lux: {早班: 640, 中班: 620, 夜班: 110}}
+  cam3: {site: C, zone: 鋼筋區, light_lux: {早班: 660, 中班: 640, 夜班: 130}}
+  cam4: {site: D, zone: 高架作業區, light_lux: {早班: 630, 中班: 610, 夜班: 100}}
+people_nearby: 2

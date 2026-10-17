@@ -1,0 +1,107 @@
+[
+  {
+    "event_id": "C3-20260119-083015-0",
+    "camera_id": "cam3",
+    "site": "C",
+    "zone": "鋼筋區",
+    "event_time": "2026-01-19T08:30:15+08:00",
+    "class": "head",
+    "confidence": 0.936,
+    "bbox": [
+      87.7,
+      131.2,
+      116.5,
+      155.8
+    ],
+    "duration_sec": 42.0,
+    "worker_id": "W012",
+    "detector": {
+      "weights": "models/helmet-yolo11n.pt",
+      "min_confidence": 0.25
+    }
+  },
+  {
+    "event_id": "D4-20260119-090547-0",
+    "camera_id": "cam4",
+    "site": "D",
+    "zone": "高架作業區",
+    "event_time": "2026-01-19T09:05:47+08:00",
+    "class": "head",
+    "confidence": 0.974,
+    "bbox": [
+      25.7,
+      112.2,
+      54.7,
+      136.7
+    ],
+    "duration_sec": 31.5,
+    "worker_id": "W027",
+    "detector": {
+      "weights": "models/helmet-yolo11n.pt",
+      "min_confidence": 0.25
+    }
+  },
+  {
+    "event_id": "D4-20260119-090547-1",
+    "camera_id": "cam4",
+    "site": "D",
+    "zone": "高架作業區",
+    "event_time": "2026-01-19T09:05:47+08:00",
+    "class": "head",
+    "confidence": 0.984,
+    "bbox": [
+      82.9,
+      89.5,
+      121.4,
+      123.6
+    ],
+    "duration_sec": 8.0,
+    "worker_id": "W033",
+    "detector": {
+      "weights": "models/helmet-yolo11n.pt",
+      "min_confidence": 0.25
+    }
+  },
+  {
+    "event_id": "B2-20260119-101230-0",
+    "camera_id": "cam2",
+    "site": "B",
+    "zone": "物料區",
+    "event_time": "2026-01-19T10:12:30+08:00",
+    "class": "head",
+    "confidence": 0.917,
+    "bbox": [
+      27.6,
+      124.8,
+      53.4,
+      146.8
+    ],
+    "duration_sec": 66.0,
+    "worker_id": "W041",
+    "detector": {
+      "weights": "models/helmet-yolo11n.pt",
+      "min_confidence": 0.25
+    }
+  },
+  {
+    "event_id": "B2-20260119-101230-1",
+    "camera_id": "cam2",
+    "site": "B",
+    "zone": "物料區",
+    "event_time": "2026-01-19T10:12:30+08:00",
+    "class": "head",
+    "confidence": 0.975,
+    "bbox": [
+      86.6,
+      77.1,
+      117.8,
+      103.9
+    ],
+    "duration_sec": 12.5,
+    "worker_id": "W008",
+    "detector": {
+      "weights": "models/helmet-yolo11n.pt",
+      "min_confidence": 0.25
+    }
+  }
+]

@@ -1,0 +1,15 @@
+# 23｜test（2025-12-29～2026-01-11，977 筆）的開封紀錄。每打開一次就加一列；不能刪。
+# 規矩：打開前先寫好驗收標準（acceptance.yaml）；打開後不依結果改模型、門檻、規則；
+# 不及格就記錄、回到 valid 或新標註的資料找原因；第三次要驗收時，改用上線後新標註的資料當新的 test。
+openings:
+  - lesson: "10"
+    date: 2026-01-12
+    by: 工程師
+    what: 最終候選模型的 precision / recall（門檻 0.5）
+    changed_after: 無
+  - lesson: "23"
+    date: 2026-02-10
+    by: 工程師（陳主任在場）
+    what: 端到端驗收：notify-hgb-2026.01 ＋ 門檻 0.2 ＋ rules-2026.01
+    criteria: acceptance-2026.02
+    changed_after: 無

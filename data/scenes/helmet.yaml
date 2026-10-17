@@ -1,0 +1,8 @@
+# 由 tools/build_data.py 產生。path 請用絕對路徑或在 data/scenes 目錄下執行。
+path: .
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: helmet
+  1: head

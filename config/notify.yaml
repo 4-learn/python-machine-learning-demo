@@ -1,0 +1,16 @@
+# 由 tools/build_artifacts.py 產生；改門檻要經過 12 節的流程並由陳主任核准。
+model:
+  file: models/notify-hgb.joblib
+  sha256_12: db38e07ff93e
+  version: notify-hgb-2026.01
+  sklearn: 1.9.1
+  trained_on: data/events.csv（sha256_12 80bf78ce18a6）2025-11-03～2025-12-28
+threshold:
+  value: 0.2
+  chosen_on: 驗證集 2025-12-15～2025-12-28（963 筆）
+  rule: 最小化 10×漏報 + 1×誤報（驗證集成本 172）
+  approved_by: 陳主任
+  approved_at: 2026-01-13
+camera:
+  detector: models/helmet-yolo11n.pt
+  min_confidence: 0.25

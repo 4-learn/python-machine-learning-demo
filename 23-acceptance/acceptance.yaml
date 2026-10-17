@@ -1,0 +1,50 @@
+# 23｜驗收標準：在打開 test 與新資料「之前」寫好，打開之後不能改。
+# 每一條都寫清楚：量什麼、用哪份資料、及格線、及格線從哪來。
+version: acceptance-2026.02
+written_by: 工程師（陳主任確認）
+written_at: 2026-02-10
+expected:  # 打開之前的預期：valid（12 節選門檻的那 963 筆）上，同一套管線的結果
+  source: valid 2025-12-15～2025-12-28，模型只用前 6 週訓練（與 12 節相同）
+  recall: 0.914
+  precision: 0.672
+  notify_per_day: 8.1
+checks:
+  - id: D1
+    name: 偵測：原圖 head 召回
+    data: data/scenes 測試集 90 張
+    min: 0.95
+    why: 19 節 val 上 0.25 門檻零漏框
+  - id: D2
+    name: 偵測：夜間模擬 head 召回
+    data: data/scenes 測試集 90 張，調暗
+    min: 0.90
+    why: 19 節夜間成本最低點仍有少量漏框
+  - id: T1
+    name: 通知召回（test，第二次打開）
+    data: data/events.csv 2025-12-29～2026-01-11（977 筆）
+    min: 0.85
+    why: 預期 0.914，扣掉兩週資料的抽樣誤差
+  - id: T2
+    name: 每天通知次數（test）
+    data: 同上
+    max: 12
+    why: 陳主任可接受的上限；現行規則平均每天 20.7 次
+  - id: T3
+    name: 休息區通知次數（test）
+    data: 同上
+    max: 0
+    why: 公司政策
+  - id: N1
+    name: 通知召回（上線 4 週，已標註）
+    data: data/events-new-weeks.csv 有 needs_notify 的 463 筆
+    min: 0.85
+    why: 新資料要和 test 一樣好，才算「上線後仍有效」
+  - id: N2
+    name: 成本低於現行規則（上線 4 週，已標註）
+    data: 同上
+    rule: 10×漏報 + 1×誤報，模型 < 規則
+    why: 12 節的成本定義
+  - id: M1
+    name: 漂移：各工地 confidence PSI 不超過訓練期正常晃動
+    data: 上線 4 週全部 1910 筆
+    why: 22 節的監控尺
