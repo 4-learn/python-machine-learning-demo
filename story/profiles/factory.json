@@ -26,5 +26,6 @@
     "histgradientboostingclassifier__max_leaf_nodes": 15
   },
   "detector_min_recall": 0.95,
-  "detector_conf": 0.9
+  "detector_conf": 0.9,
+  "roi_score_min": 0.05
 }

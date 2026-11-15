@@ -1,0 +1,9 @@
+{
+ "name": "room_301",
+ "x1": 60,
+ "y1": 120,
+ "x2": 260,
+ "y2": 200,
+ "event_type": "bed_exit",
+ "alert_when": "empty"
+}

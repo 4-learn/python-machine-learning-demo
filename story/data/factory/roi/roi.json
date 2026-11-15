@@ -1,0 +1,9 @@
+{
+ "name": "aisle_01",
+ "x1": 110,
+ "y1": 90,
+ "x2": 210,
+ "y2": 240,
+ "event_type": "aisle_blocked",
+ "alert_when": "occupied"
+}
