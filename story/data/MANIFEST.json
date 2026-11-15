@@ -1,0 +1,30 @@
+{
+ "generator": "tools/build_story_data.py",
+ "seed": 20260112,
+ "environment": {
+  "python": "3.11.8",
+  "numpy": "2.4.6",
+  "pandas": "3.0.6"
+ },
+ "stats": {
+  "factory": {
+   "rows": 3540,
+   "incidents": 2256,
+   "positive_rate": 0.154
+  },
+  "care": {
+   "rows": 3429,
+   "incidents": 2089,
+   "positive_rate": 0.2065
+  }
+ },
+ "caveat": "合成資料，不代表任何真實工廠、機構或人員；健康線不含姓名。",
+ "sha256": {
+  "care/alerts.csv": "a4632c29a992730aaaaeb78e46a11a27f02238bae10ffead8cf31e6e5d1c09b2",
+  "care/new_events.jsonl": "16122687cb6d2f2838e45f09a6fcee1ce361336f7cc96ed0f9906b203349aab8",
+  "care/people.csv": "9bafe23630f4d76ba2cd7fbd08ef7a414d20593e8224cf4c752c0151919f1736",
+  "factory/alerts.csv": "79217730edad3dbd09799c579e45b6d399c5cc63fd1423eb6540bda15ce6168a",
+  "factory/new_events.jsonl": "e67021a3286df304eadc3e318689fa8b3c31cfeb255b504a63c6dd7c0a524757",
+  "factory/people.csv": "797b16e40ccd8e0dfe230d941fb594aa8052bab843e6bbbd73306be633897257"
+ }
+}

@@ -1,0 +1,28 @@
+{
+  "customer": "care",
+  "handler_role": "值班護理師",
+  "locations": [
+    "room_301",
+    "room_302",
+    "room_303",
+    "lounge_01"
+  ],
+  "escalation_strategy": "by_minutes",
+  "event_types": {
+    "fall_detected": {
+      "severity": "high",
+      "escalate_after_minutes": 2
+    },
+    "bed_exit": {
+      "severity": "medium",
+      "escalate_after_minutes": 2
+    }
+  },
+  "auto_alert_min_precision": 0.9,
+  "max_missed_rate": 0.1,
+  "model_params": {
+    "histgradientboostingclassifier__learning_rate": 0.05,
+    "histgradientboostingclassifier__max_depth": null,
+    "histgradientboostingclassifier__max_leaf_nodes": 15
+  }
+}
