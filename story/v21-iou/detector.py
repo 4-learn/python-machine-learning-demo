@@ -1,0 +1,176 @@
+"""偵測器：看照片，把「要注意」的畫面變成事件送進平台（ML 課進度存檔 v21）。
+
+執行（在這個資料夾裡）：
+    LINE=factory python detector.py     # 工廠線：沒戴安全帽
+    LINE=care python detector.py        # 健康線：倒在地上
+"""
+import json
+import os
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from PIL import Image
+import torch
+from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+from ultralytics import YOLO
+
+LINE = os.getenv("LINE", "factory")
+HERE = Path(__file__).resolve().parent
+STORY = HERE.parent
+PROFILE = json.loads((STORY / "profiles" / f"{LINE}.json").read_text(encoding="utf-8"))
+CROPS = STORY / "data" / LINE / "crops"
+SCENES = STORY / "data" / LINE / "scenes"
+NIGHT_CAMERA = {"factory": "camera_04", "care": "camera_14"}[LINE]
+EVENT_TYPE = {"factory": "no_helmet", "care": "fall_detected"}[LINE]
+torch.manual_seed(0)
+torch.set_num_threads(4)
+
+
+def load_index():
+    """小圖清單：檔名、哪一支攝影機、ok（沒事）或 alert（要注意）。"""
+    return pd.read_csv(CROPS / "index.csv")
+
+
+def load_rgb(path):
+    return np.asarray(Image.open(path).convert("RGB"))
+
+
+WEIGHTS = MobileNet_V3_Small_Weights.IMAGENET1K_V1
+PREPROCESS = WEIGHTS.transforms()
+
+
+def load_backbone():
+    """ImageNet 預訓練的 MobileNetV3-Small，只拿來看圖、不訓練。"""
+    return mobilenet_v3_small(weights=WEIGHTS).eval()
+
+
+def features(model, paths):
+    """每張圖變成 576 個數字（拿掉最後的分類層）。"""
+    with torch.no_grad():
+        x = torch.stack([PREPROCESS(Image.open(p).convert("RGB")) for p in paths])
+        return model.avgpool(model.features(x)).flatten(1)
+
+
+def split_by_camera(index):
+    """依攝影機切：夜間那支當 test，另一支當 valid，其餘兩支拿來學。"""
+    cams = [c for c in sorted(index["camera"].unique()) if c != NIGHT_CAMERA]
+    valid_cam = cams[-1]
+    part = np.where(index["camera"] == NIGHT_CAMERA, "test", np.where(index["camera"] == valid_cam, "valid", "train"))
+    return pd.Series(part, index=index.index)
+
+
+def train_linear(x, y, epochs, lr=1e-3, batch_size=32):
+    """最簡單的訓練迴圈：一層 nn.Linear，CrossEntropyLoss＋Adam。"""
+    model = nn.Linear(x.shape[1], 2)
+    loader = DataLoader(TensorDataset(x, y), batch_size=batch_size, shuffle=True,
+                        generator=torch.Generator().manual_seed(0))
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.CrossEntropyLoss()
+    history = []
+    for epoch in range(epochs):
+        total = 0.0
+        for xb, yb in loader:
+            optimizer.zero_grad()
+            loss = loss_fn(model(xb), yb)
+            loss.backward()
+            optimizer.step()
+            total += loss.item() * len(xb)
+        history.append(total / len(x))
+    return model, history
+
+
+def accuracy_recall(model, x, y):
+    with torch.no_grad():
+        pred = model(x).argmax(1)
+    tp = int(((pred == 1) & (y == 1)).sum())
+    return float((pred == y).float().mean()), tp / int((y == 1).sum())
+
+
+def load_detector():
+    """教師用合成場景訓練好的 YOLO11n（20 節）：類別 0 沒事、1 要注意。"""
+    return YOLO(str(STORY.parent / "models" / f"{LINE}-yolo11n.pt"))
+
+
+def detect(detector, image_paths, conf=0.01):
+    """每個偵測框一列：哪張圖、類別、信心值、框的四個角。"""
+    rows = []
+    for result in detector.predict([str(p) for p in image_paths], conf=conf, imgsz=320, device="cpu",
+                                   verbose=False, stream=True):
+        name = Path(result.path).name
+        for cls, score, box in zip(result.boxes.cls.tolist(), result.boxes.conf.tolist(), result.boxes.xyxy.tolist()):
+            rows.append({"image": name, "cls": int(cls), "conf": round(score, 3),
+                         "x1": round(box[0], 1), "y1": round(box[1], 1), "x2": round(box[2], 1), "y2": round(box[3], 1)})
+    return pd.DataFrame(rows, columns=["image", "cls", "conf", "x1", "y1", "x2", "y2"])
+
+
+def iou(a, b):
+    """兩個框 (x1, y1, x2, y2) 重疊的面積 ÷ 合起來的面積。"""
+    w = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    h = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = w * h
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / union if union else 0.0
+
+
+def load_labels(split):
+    """YOLO 標註（中心、寬高、0–1）換回像素的 (x1, y1, x2, y2)。"""
+    rows = []
+    for path in sorted((SCENES / "labels" / split).glob("*.txt")):
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            cls, cx, cy, w, h = map(float, line.split())
+            rows.append({"image": path.stem + ".jpg", "cls": int(cls),
+                         "x1": (cx - w / 2) * 320, "y1": (cy - h / 2) * 320, "x2": (cx + w / 2) * 320, "y2": (cy + h / 2) * 320})
+    return pd.DataFrame(rows)
+
+
+def match(pred, truth, conf, iou_min=0.5):
+    """只看「要注意」那一類：信心值 ≥ conf 的框，和標註框 IoU ≥ 0.5 才算抓到。"""
+    p = pred[(pred["cls"] == 1) & (pred["conf"] >= conf)].sort_values("conf", ascending=False)
+    t = truth[truth["cls"] == 1]
+    used, tp = set(), 0
+    for _, box in p.iterrows():
+        cands = t[t["image"] == box["image"]]
+        best, best_i = 0.0, None
+        for i, gt in cands.iterrows():
+            if i in used:
+                continue
+            v = iou(box[["x1", "y1", "x2", "y2"]].tolist(), gt[["x1", "y1", "x2", "y2"]].tolist())
+            if v > best:
+                best, best_i = v, i
+        if best >= iou_min:
+            used.add(best_i)
+            tp += 1
+    fp, fn = len(p) - tp, len(t) - tp
+    return {"conf": conf, "TP": tp, "FP": fp, "FN": fn,
+            "precision": round(tp / (tp + fp), 3) if tp + fp else 0.0, "recall": round(tp / (tp + fn), 3)}
+
+
+def choose_conf(pred, truth, min_recall):
+    """在 val 上，由高往低找：第一個讓 recall 達標的偵測門檻。"""
+    for conf in np.round(np.arange(0.9, 0.04, -0.05), 2):
+        row = match(pred, truth, conf)
+        if row["recall"] >= min_recall:
+            return float(conf), row
+    return 0.05, match(pred, truth, 0.05)
+
+
+def main():
+    detector = load_detector()
+    val_pred = detect(detector, sorted((SCENES / "images" / "val").glob("*.jpg")))
+    val_truth = load_labels("val")
+    print(f"== {LINE}：「要注意」那一類，偵測門檻掃一遍（val）==")
+    print(pd.DataFrame([match(val_pred, val_truth, c) for c in [0.9, 0.7, 0.5, 0.3, 0.1]]).to_string(index=False))
+    conf, row = choose_conf(val_pred, val_truth, PROFILE["detector_min_recall"])
+    print(f"\nrecall 至少 {PROFILE['detector_min_recall']} → 偵測門檻 {conf}")
+    test_pred = detect(detector, sorted((SCENES / "images" / "test").glob("*.jpg")))
+    print("\n== 用這個門檻打開 test ==")
+    print(pd.DataFrame([match(test_pred, load_labels("test"), conf)]).to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()

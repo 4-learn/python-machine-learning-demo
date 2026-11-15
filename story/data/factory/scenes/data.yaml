@@ -1,0 +1,8 @@
+# 由 tools/build_story_images.py 產生；在 scenes 資料夾裡用相對路徑
+path: .
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: helmet
+  1: head

@@ -24,5 +24,7 @@
     "histgradientboostingclassifier__learning_rate": 0.05,
     "histgradientboostingclassifier__max_depth": null,
     "histgradientboostingclassifier__max_leaf_nodes": 15
-  }
+  },
+  "detector_min_recall": 0.95,
+  "detector_conf": 0.85
 }

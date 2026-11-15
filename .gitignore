@@ -7,3 +7,4 @@ runs/
 story/*/out/
 demo/*/out/
 story/my/
+story/*/handoff/
