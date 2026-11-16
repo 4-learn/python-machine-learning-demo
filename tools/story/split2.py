@@ -3,7 +3,7 @@ import re, shutil, sys
 from pathlib import Path
 src = Path(sys.argv[1]).read_text().splitlines()
 root = Path(sys.argv[2])
-names = {16: "v16-image-array", 17: "v17-pytorch", 18: "v18-training-loop", 19: "v19-finetune", 20: "v20-yolo",
+names = {16: "v16-image-array", 17: "v17-pytorch", 18: "v18-backbone-features", 19: "v19-linear-probe", 20: "v20-yolo",
          21: "v21-iou", 22: "v22-requests", 23: "v23-workshop2", 24: "v24-handoff"}
 for v, name in names.items():
     keep, mode = [], ("all", None)

@@ -3,7 +3,7 @@ import re, sys
 from pathlib import Path
 src = Path(sys.argv[1]).read_text().splitlines()
 root = Path(sys.argv[2])
-names = {25: "v25-opencv", 26: "v26-roi", 27: "v27-ezcam", 28: "v28-conv2d", 29: "v29-yolo-pose", 30: "v30-pose-features",
+names = {25: "v25-opencv", 26: "v26-roi", 27: "v27-ezcam", 28: "v28-first-layer", 29: "v29-yolo-pose", 30: "v30-pose-features",
          31: "v31-resample", 32: "v32-rolling", 33: "v33-merge-asof", 34: "v34-drift", 35: "v35-regression",
          36: "v36-timeseries", 37: "v37-learning-curve", 38: "v38-random-search", 39: "v39-class-weight", 40: "v40-pca"}
 for v, name in names.items():

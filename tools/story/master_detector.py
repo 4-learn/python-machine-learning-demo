@@ -16,8 +16,14 @@ from PIL import Image
 import torch
 from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
 #@v18
-from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.neighbors import KNeighborsClassifier
+from torchvision.models import get_model, get_model_weights
+#@v19
+import joblib
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_score, recall_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 #@v20
 from ultralytics import YOLO
 #@v22
@@ -75,31 +81,53 @@ def split_by_camera(index):
     return pd.Series(part, index=index.index)
 
 
-def train_linear(x, y, epochs, lr=1e-3, batch_size=32):
-    """最簡單的訓練迴圈：一層 nn.Linear，CrossEntropyLoss＋Adam。"""
-    model = nn.Linear(x.shape[1], 2)
-    loader = DataLoader(TensorDataset(x, y), batch_size=batch_size, shuffle=True,
-                        generator=torch.Generator().manual_seed(0))
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.CrossEntropyLoss()
-    history = []
-    for epoch in range(epochs):
-        total = 0.0
-        for xb, yb in loader:
-            optimizer.zero_grad()
-            loss = loss_fn(model(xb), yb)
-            loss.backward()
-            optimizer.step()
-            total += loss.item() * len(xb)
-        history.append(total / len(x))
-    return model, history
+BACKBONES = ["mobilenet_v3_small", "resnet18"]
 
 
-def accuracy_recall(model, x, y):
+def backbone_features(name, paths, batch=32):
+    """用 torchvision 的名字載入 ImageNet 預訓練模型，拿掉最後一層，每張圖變成一串數字。"""
+    weights = get_model_weights(name)["IMAGENET1K_V1"]
+    model = get_model(name, weights=weights).eval()
+    if hasattr(model, "fc"):
+        model.fc = torch.nn.Identity()          # ResNet 的最後一層叫 fc
+    else:
+        model.classifier = torch.nn.Identity()  # MobileNet 的最後幾層叫 classifier
+    pre = weights.transforms()
+    out = []
     with torch.no_grad():
-        pred = model(x).argmax(1)
-    tp = int(((pred == 1) & (y == 1)).sum())
-    return float((pred == y).float().mean()), tp / int((y == 1).sum())
+        for i in range(0, len(paths), batch):
+            out.append(model(torch.stack([pre(Image.open(p).convert("RGB")) for p in paths[i:i + batch]])))
+    return torch.cat(out).numpy()
+
+
+def pixel_features(paths, size=32):
+    """對照組：32×32 灰階像素直接攤平。"""
+    return np.stack([np.asarray(Image.open(p).convert("L").resize((size, size)), np.float32).ravel() / 255 for p in paths])
+
+
+def knn_accuracy(x, y, part, split):
+    """ML 課 05 節的 KNN（k=1）：最像的那張小圖是什麼，就猜什麼。"""
+    knn = KNeighborsClassifier(n_neighbors=1).fit(x[part == "train"], y[part == "train"])
+    return float((knn.predict(x[part == split]) == y[part == split]).mean())
+
+
+def choose_backbone(index, part, y):
+    """在 valid 上比較每一個骨幹（KNN 準確率），選最高的；test 不看。"""
+    paths = [CROPS / f for f in index["file"]]
+    scores = {name: knn_accuracy(backbone_features(name, paths), y, part, "valid") for name in BACKBONES}
+    return max(scores, key=scores.get), scores
+#@v19
+
+
+def fit_probe(x, y):
+    """linear probe：預訓練特徵＋ML 課 07 節的邏輯迴歸（先標準化，ML 課 06 節的 Pipeline）。"""
+    return make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000)).fit(x, y)
+
+
+def report(model, x, y):
+    pred = model.predict(x)
+    return {"accuracy": round(float((pred == y).mean()), 3), "precision": round(precision_score(y, pred, zero_division=0), 3),
+            "recall": round(recall_score(y, pred), 3)}
 #@v20
 
 
@@ -289,40 +317,34 @@ def main():
     print(f"這個模型有 {params:,} 個參數；最後一層（1000 類）有 {sum(p.numel() for p in model.classifier[3].parameters()):,} 個")
 #@main v18
     index = load_index()
-    part = split_by_camera(index)
-    y = torch.tensor((index["label"] == "alert").astype(int).to_numpy())
-    pixels = np.stack([np.asarray(Image.open(CROPS / f).convert("L").resize((32, 32))) for f in index["file"]])
-    x = torch.tensor(pixels.reshape(len(index), -1) / 255, dtype=torch.float32)
-    print(f"== {LINE}：直接拿像素訓練（32×32 灰階＝{x.shape[1]} 個數字）==")
-    print(part.value_counts().reindex(["train", "valid", "test"]).to_string())
-    tr = torch.tensor((part == "train").to_numpy())
-    va = torch.tensor((part == "valid").to_numpy())
-    model, history = train_linear(x[tr], y[tr], epochs=30, lr=1e-2)
-    print("\n== loss 一輪一輪往下掉 ==")
-    print("  ".join(f"第{e + 1}輪 {history[e]:.3f}" for e in [0, 4, 9, 19, 29]))
-    te = torch.tensor((part == "test").to_numpy())
-    for name, mask in [("train", tr), ("valid", va), ("test", te)]:
-        acc, rec = accuracy_recall(model, x[mask], y[mask])
-        print(f"{name:<6}accuracy {acc:.3f}  recall {rec:.3f}")
-    print(f"test 是夜間攝影機 {NIGHT_CAMERA}，這一支攝影機的畫面訓練時完全沒看過")
+    part = split_by_camera(index).to_numpy()
+    y = (index["label"] == "alert").astype(int).to_numpy()
+    paths = [CROPS / f for f in index["file"]]
+    print(f"== {LINE}：三種「把小圖變成數字」的方法，都用 KNN（k=1）打成績 ==")
+    rows = []
+    for name, x in [("像素 32×32", pixel_features(paths))] + [(n, backbone_features(n, paths)) for n in BACKBONES]:
+        rows.append({"特徵": name, "數字個數": x.shape[1], "valid": knn_accuracy(x, y, part, "valid"),
+                     "test（夜間）": knn_accuracy(x, y, part, "test")})
+    print(pd.DataFrame(rows).round(3).to_string(index=False))
+    best, scores = choose_backbone(index, part, y)
+    print(f"\n只看 valid 選骨幹：{best}（valid {scores[best]:.3f}）")
 #@main v19
     index = load_index()
-    part = split_by_camera(index)
-    y = torch.tensor((index["label"] == "alert").astype(int).to_numpy())
-    x = features(load_backbone(), [CROPS / f for f in index["file"]])
-    masks = {p: torch.tensor((part == p).to_numpy()) for p in ["train", "valid", "test"]}
-    head, history = train_linear(x[masks["train"]], y[masks["train"]], epochs=30)
-    print(f"== {LINE}：預訓練特徵＋重新訓練最後一層 ==")
-    print("  ".join(f"第{e + 1}輪 {history[e]:.3f}" for e in [0, 4, 9, 19, 29]))
-    for name in ["train", "valid", "test"]:
-        acc, rec = accuracy_recall(head, x[masks[name]], y[masks[name]])
-        print(f"{name:<6}accuracy {acc:.3f}  recall {rec:.3f}")
-    cams = index.loc[part == "test", "camera"].iloc[0]
-    print(f"test 是夜間攝影機 {cams}：模型沒看過這麼暗的畫面")
+    part = split_by_camera(index).to_numpy()
+    y = (index["label"] == "alert").astype(int).to_numpy()
+    best, _ = choose_backbone(index, part, y)
+    x = backbone_features(best, [CROPS / f for f in index["file"]])
+    print(f"== {LINE}：{best} 的特徵＋邏輯迴歸（linear probe）==")
+    knn = KNeighborsClassifier(n_neighbors=1).fit(x[part == "train"], y[part == "train"])
+    probe = fit_probe(x[part == "train"], y[part == "train"])
+    rows = [{"模型": "KNN（k=1）", "資料": s, **report(knn, x[part == s], y[part == s])} for s in ["valid", "test"]]
+    rows += [{"模型": "邏輯迴歸", "資料": s, **report(probe, x[part == s], y[part == s])} for s in ["valid", "test"]]
+    print(pd.DataFrame(rows).to_string(index=False))
+    print(f"test 是夜間攝影機 {NIGHT_CAMERA}：訓練時一張都沒看過")
     out = HERE / "out" / LINE
     out.mkdir(parents=True, exist_ok=True)
-    torch.save(head.state_dict(), out / "head.pt")
-    print(f"已存 out/{LINE}/head.pt（只存最後一層，{sum(p.numel() for p in head.parameters()):,} 個參數）")
+    joblib.dump({"backbone": best, "probe": probe}, out / "probe.joblib")
+    print(f"已存 out/{LINE}/probe.joblib（骨幹名稱＋邏輯迴歸，{probe[-1].coef_.size + 1:,} 個參數）")
 #@main v20
     detector = load_detector()
     print(f"== {LINE}：YOLO 偵測器（類別 {detector.names}）==")

@@ -13,7 +13,7 @@ import pandas as pd
 import cv2
 import requests
 import torch
-from torch import nn
+from torchvision.models import ResNet18_Weights, resnet18
 from ultralytics import YOLO
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import precision_score, recall_score
@@ -101,12 +101,24 @@ class Camera:
         return name, cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
 
 
-def edge_kernel():
-    """一個 3×3 的「找垂直邊」濾波器，放進 nn.Conv2d。"""
-    conv = nn.Conv2d(1, 1, kernel_size=3, padding=1, bias=False)
-    with torch.no_grad():
-        conv.weight[:] = torch.tensor([[[[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]]]])
-    return conv
+SOBEL_X = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], np.float32)   # 26 節之後常用的「找垂直邊」濾波器
+
+
+def first_layer(pretrained=True):
+    """ResNet18 的第一層：64 個 7×7 的濾波器，每個看 R、G、B 三個顏色。pretrained=False 是沒訓練過的對照組。"""
+    torch.manual_seed(0)
+    weights = ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
+    return resnet18(weights=weights).eval().conv1
+
+
+def kernel_similarity(kernel, pattern):
+    """學出來的濾波器（三色平均，7×7）和放大到 7×7 的手寫 pattern 比像不像（相關係數，-1～1）。
+    幾乎全是 0 的濾波器（沒在用）回傳 0。"""
+    k = kernel.detach().mean(0).numpy()
+    if np.abs(k).max() < 1e-3:
+        return 0.0
+    big = cv2.resize(pattern, k.shape[::-1], interpolation=cv2.INTER_LINEAR)
+    return float(np.corrcoef(k.ravel(), big.ravel())[0, 1])
 
 
 KPTS = ["nose", "left_eye", "right_eye", "left_ear", "right_ear", "left_shoulder", "right_shoulder",

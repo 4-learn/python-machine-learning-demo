@@ -27,8 +27,8 @@ const TITLES = {
   "15": ["判斷器 MVP", "Workshop 1"],
   "16": ["影像就是陣列", "Pillow、NumPy"],
   "17": ["tensor 與預訓練模型", "PyTorch"],
-  "18": ["訓練迴圈", "PyTorch DataLoader、optimizer"],
-  "19": ["微調預訓練模型", "torchvision"],
+  "18": ["比較預訓練骨幹", "torchvision get_model＋KNN"],
+  "19": ["linear probe", "預訓練特徵＋LogisticRegression"],
   "20": ["物件偵測推論", "ultralytics YOLO"],
   "21": ["偵測框對不對", "IoU 與偵測門檻"],
   "22": ["偵測結果送進平台", "requests"],
@@ -37,7 +37,7 @@ const TITLES = {
   "25": ["讀圖與 ROI", "OpenCV"],
   "26": ["ROI 有沒有被占用", "OpenCV threshold、findContours"],
   "27": ["從攝影機到陣列", "EZCam"],
-  "28": ["卷積層就是濾波器", "PyTorch nn.Conv2d"],
+  "28": ["預訓練第一層學到什麼", "torchvision resnet18.conv1"],
   "29": ["17 個關鍵點", "ultralytics YOLO-pose"],
   "30": ["姿勢特徵與時間窗口", "NumPy"],
   "31": ["偵測串流整理成每分鐘一格", "pandas resample"],
@@ -96,11 +96,11 @@ el("a_ezcam", "actor", 24, 270, 150, 64, ["EZCam", "被叫才拍"], "27");
 // ---------- 偵測器（16–30） ----------
 el("d_array", "service", 212, 152, 118, 46, ["影像陣列", "Pillow／NumPy"], "16");
 el("d_torch", "service", 340, 152, 118, 46, ["預訓練模型", "PyTorch"], "17");
-el("d_loop", "service", 468, 152, 118, 46, ["訓練迴圈", "loss／optimizer"], "18");
-el("d_cls", "service", 212, 210, 118, 46, ["影像分類器", "微調"], "19");
+el("d_loop", "service", 468, 152, 118, 46, ["選骨幹", "get_model＋KNN"], "18");
+el("d_cls", "service", 212, 210, 118, 46, ["影像分類器", "linear probe"], "19");
 el("d_yolo", "service", 340, 210, 118, 46, ["YOLO 偵測", "ultralytics"], "20");
 el("d_iou", "service", 468, 210, 118, 46, ["偵測門檻", "IoU"], "21");
-el("d_conv", "service", 212, 268, 118, 46, ["卷積層", "Conv2d"], "28");
+el("d_conv", "service", 212, 268, 118, 46, ["第一層", "學出來的濾波器"], "28");
 el("d_cv", "service", 340, 268, 118, 46, [["25", ["OpenCV", "讀圖、ROI"]], ["26", ["OpenCV", "ROI 被占用"]]], "25", { changed: ["26"] });
 el("d_pose", "service", 212, 326, 118, 46, ["YOLO-pose", "17 個關鍵點"], "29");
 el("d_posef", "service", 340, 326, 118, 46, ["姿勢特徵", "時間窗口"], "30");

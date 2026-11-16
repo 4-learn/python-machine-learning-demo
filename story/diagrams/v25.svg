@@ -30,11 +30,11 @@
 <text x="399" y="172" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="13.5" fill="#3a3f47" font-weight="bold" text-anchor="middle">預訓練模型</text>
 <text x="399" y="186" font-family="'SF Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="10.5" fill="#3a3f47" font-weight="normal" text-anchor="middle">PyTorch</text>
 <rect x="468" y="152" width="118" height="46" rx="8" fill="#f4f5f7" stroke="#a3a8b0" stroke-width="1.3"/>
-<text x="527" y="172" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="13.5" fill="#3a3f47" font-weight="bold" text-anchor="middle">訓練迴圈</text>
-<text x="527" y="186" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="10.5" fill="#3a3f47" font-weight="normal" text-anchor="middle">loss／optimizer</text>
+<text x="527" y="172" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="13.5" fill="#3a3f47" font-weight="bold" text-anchor="middle">選骨幹</text>
+<text x="527" y="186" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="10.5" fill="#3a3f47" font-weight="normal" text-anchor="middle">get_model＋KNN</text>
 <rect x="212" y="210" width="118" height="46" rx="8" fill="#f4f5f7" stroke="#a3a8b0" stroke-width="1.3"/>
 <text x="271" y="230" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="13.5" fill="#3a3f47" font-weight="bold" text-anchor="middle">影像分類器</text>
-<text x="271" y="244" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="10.5" fill="#3a3f47" font-weight="normal" text-anchor="middle">微調</text>
+<text x="271" y="244" font-family="'SF Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="10.5" fill="#3a3f47" font-weight="normal" text-anchor="middle">linear probe</text>
 <rect x="340" y="210" width="118" height="46" rx="8" fill="#f4f5f7" stroke="#a3a8b0" stroke-width="1.3"/>
 <text x="399" y="230" font-family="'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',sans-serif" font-size="13.5" fill="#3a3f47" font-weight="bold" text-anchor="middle">YOLO 偵測</text>
 <text x="399" y="244" font-family="'SF Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="10.5" fill="#3a3f47" font-weight="normal" text-anchor="middle">ultralytics</text>
