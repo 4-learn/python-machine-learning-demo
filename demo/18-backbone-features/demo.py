@@ -15,23 +15,22 @@ torch.set_num_threads(4)
 CROPS = Path("story/data/factory/crops")
 BACKBONES = ["mobilenet_v3_small", "resnet18"]
 
-print("== 1. list_models：torchvision 內建幾種分類模型 ==")
-names = list_models(module=torchvision.models)
-print(f"共 {len(names)} 種；名字以 resnet 開頭的：{[n for n in names if n.startswith('resnet')]}")
-
-print("\n== 2. get_model_weights：先看規格，不必下載 ==")
 rows = []
+names = list_models(module=torchvision.models)
 for name in ["mobilenet_v3_small", "resnet18", "efficientnet_b0", "resnet50"]:
     enum = get_model_weights(name)
     meta = enum["IMAGENET1K_V1"].meta
     rows.append({"名字": name, "可用的權重": "、".join(w.name for w in enum),
                  "參數（百萬）": round(meta["num_params"] / 1e6, 1),
                  "ImageNet top-1（%）": meta["_metrics"]["ImageNet-1K"]["acc@1"]})
+print("== 1. list_models：torchvision 內建幾種分類模型 ==")
+print(f"共 {len(names)} 種；名字以 resnet 開頭的：{[n for n in names if n.startswith('resnet')]}")
+print("\n== 2. get_model_weights：先看規格，不必下載 ==")
 print(pd.DataFrame(rows).to_string(index=False))
 
 print("\n== 3. get_model：用名字載入，每個模型的最後一層名字不一樣 ==")
 models, preprocess = {}, {}
-for name in BACKBONES:
+for name in ["mobilenet_v3_small", "resnet18"]:
     weights = get_model_weights(name)["IMAGENET1K_V1"]
     models[name] = get_model(name, weights=weights).eval()
     preprocess[name] = weights.transforms()
@@ -52,13 +51,18 @@ for name, model in models.items():
         after = tuple(model(x).shape)
     print(f"{name:<19} 換之前 {before} → 換之後 {after}")
 wrong = get_model("resnet18", weights="IMAGENET1K_V1").eval()
-wrong.classifier = nn.Identity()                 # resnet18 沒有 classifier：只是多掛一個沒人用的屬性
+wrong.classifier = nn.Identity()                 # resnet18 沒有 classifier
 with torch.no_grad():
     print(f"resnet18 寫成 classifier = Identity：輸出還是 {tuple(wrong(x).shape)}，不會報錯")
 
 
+def pixel_features(paths, size=32):
+    """對照組：32×32 灰階像素直接攤平。"""
+    return np.stack([np.asarray(Image.open(p).convert("L").resize((size, size)), np.float32).ravel() / 255
+                     for p in paths])
+
+
 def backbone_features(model, pre, paths, batch=50):
-    """每 50 張一批送進骨幹，接起來變成 (張數, 特徵數) 的 NumPy 陣列。"""
     out = []
     with torch.no_grad():
         for i in range(0, len(paths), batch):
@@ -66,10 +70,10 @@ def backbone_features(model, pre, paths, batch=50):
     return torch.cat(out).numpy()
 
 
-def pixel_features(paths, size=32):
-    """對照組：32×32 灰階像素直接攤平。"""
-    return np.stack([np.asarray(Image.open(p).convert("L").resize((size, size)), np.float32).ravel() / 255
-                     for p in paths])
+def knn_accuracy(x):
+    knn = KNeighborsClassifier(n_neighbors=1).fit(x[learn], y[learn])
+    accuracy = (knn.predict(x[~learn]) == y[~learn]).mean()
+    return round(float(accuracy), 3)
 
 
 print("\n== 5. 同一把尺：KNN（k=1）在 camera_01 學、考 camera_02 ==")
@@ -79,12 +83,5 @@ y = (small["label"] == "alert").to_numpy()
 learn = (small["camera"] == "camera_01").to_numpy()
 feats = {"像素 32×32": pixel_features(paths)}
 feats.update({name: backbone_features(models[name], preprocess[name], paths) for name in BACKBONES})
-
-
-def knn_accuracy(x):
-    knn = KNeighborsClassifier(n_neighbors=1).fit(x[learn], y[learn])
-    return round(float((knn.predict(x[~learn]) == y[~learn]).mean()), 3)
-
-
 rows = [{"特徵": k, "數字個數": x.shape[1], "accuracy": knn_accuracy(x)} for k, x in feats.items()]
 print(pd.DataFrame(rows).to_string(index=False, float_format="%.3f"))

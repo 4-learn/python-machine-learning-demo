@@ -10,7 +10,6 @@ X, y = df[NUMERIC], df["label"]
 
 
 def caught(train, test):
-    """1-NN：每一筆考題，去 train 找最像的一筆舊告警，照抄它的答案。回傳真事件抓到幾成。"""
     model = KNeighborsClassifier(n_neighbors=1).fit(train[NUMERIC], train["label"])
     pred = model.predict(test[NUMERIC])
     return pred[test["label"] == 1].mean()
@@ -29,9 +28,9 @@ print("\n== 3. 同一件事被切到兩邊 ==")
 train_ids = set(df.loc[X_train.index, "incident_id"])
 test_ids = set(df.loc[X_test.index, "incident_id"])
 print(f"test 有 {len(test_ids)} 件事，其中 {len(train_ids & test_ids)} 件在 train 也看得到")
+cols = ["alert_id", "incident_id", "confidence", "duration_seconds", "light_lux", "label", "side"]
 df["side"] = "train"
 df.loc[X_test.index, "side"] = "test"
-cols = ["alert_id", "incident_id", "confidence", "duration_seconds", "light_lux", "label", "side"]
 print(df.loc[df["incident_id"] == "I00142", cols].to_string(index=False))
 
 print("\n== 4. GroupShuffleSplit：同一個 incident_id 只會在一邊 ==")

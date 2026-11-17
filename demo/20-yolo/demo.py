@@ -39,8 +39,8 @@ print("\n== 4. 標註檔（YOLO 格式：類別 中心x 中心y 寬 高，0–1 
 label = SCENES / "labels" / "test" / "test_001.txt"
 print(label.read_text().strip())
 cls, cx, cy, w, h = map(float, label.read_text().splitlines()[0].split())
-print(f"第一列換回像素：x1 {(cx - w / 2) * 320:.1f}  y1 {(cy - h / 2) * 320:.1f}  "
-      f"x2 {(cx + w / 2) * 320:.1f}  y2 {(cy + h / 2) * 320:.1f}")
+x1, y1, x2, y2 = (cx - w / 2) * 320, (cy - h / 2) * 320, (cx + w / 2) * 320, (cy + h / 2) * 320
+print(f"第一列換回像素：x1 {x1:.1f}  y1 {y1:.1f}  x2 {x2:.1f}  y2 {y2:.1f}")
 
 print("\n== 5. conf：信心值低於門檻的框不回傳（test_007）==")
 other = SCENES / "images" / "test" / "test_007.jpg"

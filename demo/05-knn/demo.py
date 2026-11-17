@@ -12,14 +12,15 @@ past = pd.DataFrame({
 }, index=[f"A{i}" for i in range(1, 11)])
 new = pd.DataFrame({"confidence": [0.90, 0.66], "duration_seconds": [50, 31],
                     "days_on_site": [1450, 700]}, index=["新告警 N1", "新告警 N2"])
-TWO = ["confidence", "duration_seconds"]
 
 print("== 1. 過去的告警 ==")
 print(past.to_string())
 
 print("\n== 2. fit 再 predict：3 個鄰居投票 ==")
+TWO = ["confidence", "duration_seconds"]
 knn = KNeighborsClassifier(n_neighbors=3).fit(past[TWO], past["label"])
-print(pd.Series(knn.predict(new[TWO]), index=new.index).to_string())
+pred = knn.predict(new[TWO])
+print(pd.Series(pred, index=new.index).to_string())
 
 print("\n== 3. kneighbors()：N2 的鄰居是誰 ==")
 dist, idx = knn.kneighbors(new[TWO].loc[["新告警 N2"]])

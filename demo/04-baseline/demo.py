@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 print("== 1. 10 筆告警：fit 學、predict 答 ==")
 X = pd.DataFrame({"confidence": [0.95, 0.83, 0.81, 0.72, 0.66, 0.55, 0.49, 0.41, 0.35, 0.92]})
-y = pd.Series([1, 0, 1, 1, 0, 0, 1, 0, 0, 0])   # 01 節那 10 筆：resolved＝1
+y = pd.Series([1, 0, 1, 1, 0, 0, 1, 0, 0, 0])
 dummy = DummyClassifier(strategy="most_frequent")
 dummy.fit(X, y)
 print("fit 之後記住的：classes_ =", dummy.classes_.tolist(), "，class_prior_ =", dummy.class_prior_.tolist())

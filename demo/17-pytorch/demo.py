@@ -58,14 +58,16 @@ for word in ["hard hat", "fall", "fallen"]:
 
 print("\n== 6. 推論：eval、no_grad、softmax、topk ==")
 img = Image.open(PHOTO).convert("RGB")
+# box 是 None 時 img.crop(None) 就是整張照片
 PARTS = [("整張照片", None), ("黃色安全帽", (315, 240, 410, 320)), ("沒戴帽子的頭", (515, 235, 610, 315))]
 for name, box in PARTS:
-    x = preprocess(img.crop(box) if box else img).unsqueeze(0)
+    x = preprocess(img.crop(box)).unsqueeze(0)
     with torch.no_grad():
         prob = model(x).softmax(dim=1)[0]
     top = prob.topk(3)
-    names = "、".join(f"{categories[i]} {p:.3f}" for p, i in zip(top.values.tolist(), top.indices.tolist()))
-    print(f"{name:<7}{tuple(x.shape)}：{names}")
+    names = [categories[i] for i in top.indices.tolist()]
+    shown = "、".join(f"{n} {p:.3f}" for n, p in zip(names, top.values.tolist()))
+    print(f"{name:<7}{tuple(x.shape)}：{shown}")
 
 print("\n== 7. 拿掉最後一層：每張圖變成 576 個數字 ==")
 print("最後幾層：", model.classifier)

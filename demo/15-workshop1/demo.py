@@ -28,23 +28,23 @@ print(f"新事件的分數：{before.tolist()}")
 print("\n== 2. joblib.dump：存成檔案 ==")
 path = OUT / "model.joblib"
 joblib.dump(model, path)
+loaded = joblib.load(path)
+after = loaded.predict_proba(new)[:, 1].round(3)
 print(f"{path.name}：{path.stat().st_size} bytes")
 
 print("\n== 3. joblib.load：另一支程式讀回來，分數一樣 ==")
-loaded = joblib.load(path)
-after = loaded.predict_proba(new)[:, 1].round(3)
 print(f"讀回來的分數：{after.tolist()}；和存檔前相同：{bool((before == after).all())}")
 print(f"讀回來的是：{type(loaded).__name__}，步驟 {[name for name, _ in loaded.steps]}")
 
 print("\n== 4. hashlib.sha256：檔案的指紋 ==")
+broken = OUT / "model-broken.joblib"
 digest = hashlib.sha256(path.read_bytes()).hexdigest()
+broken.write_bytes(path.read_bytes() + b"\0")
 print(f"完整：{digest}（{len(digest)} 個字元）")
 print(f"取前 12 碼：{digest[:12]}")
 print(f"同一個檔案再算一次，相同：{hashlib.sha256(path.read_bytes()).hexdigest() == digest}")
 
 print("\n== 5. 檔案只差 1 個 byte，指紋就整個不同 ==")
-broken = OUT / "model-broken.joblib"
-broken.write_bytes(path.read_bytes() + b"\0")
 print(f"{broken.name}：{hashlib.sha256(broken.read_bytes()).hexdigest()[:12]}")
 print(f"joblib.load 照樣讀得進來：{type(joblib.load(broken)).__name__}")
 

@@ -16,13 +16,12 @@ X, y, groups = train[NUMERIC + CATEGORICAL], train["label"], train["incident_id"
 
 pre = ColumnTransformer([("num", "passthrough", NUMERIC),
                          ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL)])
-model = make_pipeline(pre, DecisionTreeClassifier(random_state=0))
 cv = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=0)
 
 print("== 1. Pipeline 的步驟名：make_pipeline 自動取的 ==")
+model = make_pipeline(pre, DecisionTreeClassifier(random_state=0))
 print(list(model.named_steps))
-print("樹的參數在 Pipeline 裡的名字（節錄）：",
-      [k for k in model.get_params() if k.startswith("decisiontreeclassifier__max")])
+print([k for k in model.get_params() if k.startswith("decisiontreeclassifier__max")])
 
 print("\n== 2. GridSearchCV：5 × 2 組參數，每組考 5 折 ==")
 grid = {"decisiontreeclassifier__max_depth": [2, 3, 4, 6, None],

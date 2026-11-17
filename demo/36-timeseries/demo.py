@@ -22,7 +22,7 @@ h["last_hour"] = h["count"].shift(1)
 h = h.dropna()
 
 print("\n== 3. 隨機切 vs 照時間切：同一個模型，MAE 差多少 ==")
-knn = KNeighborsRegressor(n_neighbors=2)   # 找「時間編號最接近的 2 個小時」取平均
+knn = KNeighborsRegressor(n_neighbors=2)
 for name, cv in [("KFold(shuffle=True)", KFold(n_splits=5, shuffle=True, random_state=0)),
                  ("TimeSeriesSplit", TimeSeriesSplit(n_splits=5))]:
     mae = -cross_val_score(knn, h[["t"]], h["count"], cv=cv, scoring="neg_mean_absolute_error")

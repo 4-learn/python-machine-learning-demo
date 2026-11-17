@@ -16,7 +16,6 @@ PHOTOS = ROOT / "story" / "data" / "photos"      # AI 生成的擬真照片，�
 KPTS = ["nose", "left_eye", "right_eye", "left_ear", "right_ear", "left_shoulder", "right_shoulder",
         "left_elbow", "right_elbow", "left_wrist", "right_wrist", "left_hip", "right_hip",
         "left_knee", "right_knee", "left_ankle", "right_ankle"]
-LOW = 0.3                                         # 點的信心值低於它，當作「沒看到」
 
 print("== 1. 載入姿勢模型 ==")
 model = YOLO(str(ROOT / "models" / "yolo11n-pose.pt"))
@@ -31,10 +30,10 @@ print(f"keypoints.conf：{tuple(r.keypoints.conf.shape)}（人數, 17 個點）"
 print(f"keypoints.data：{tuple(r.keypoints.data.shape)}（x, y, 信心值放在一起）")
 
 print("\n== 3. 一個人的 17 個點（factory-lifting 第 0 人：彎腰搬箱的人）==")
-xy = r.keypoints.xy.numpy().astype(float)        # float32 → float，印出來才不會有一長串小數
+xy = r.keypoints.xy.numpy().astype(float)
 conf = r.keypoints.conf.numpy().astype(float)
 person = pd.DataFrame({"keypoint": KPTS, "x": xy[0, :, 0].round(1), "y": xy[0, :, 1].round(1),
-                       "conf": conf[0].round(3), "低信心": np.where(conf[0] < LOW, "<0.3", "")})
+                       "conf": conf[0].round(3), "低信心": np.where(conf[0] < 0.3, "<0.3", "")})
 person.index.name = "編號"
 print(person.to_string())
 
@@ -42,19 +41,19 @@ print("\n== 4. 三張照片、每個人：框信心值與低信心的點 ==")
 results = {}
 for name in ["factory-lifting.jpg", "care-corridor-fall.jpg", "care-room.jpg"]:
     res = model.predict(str(PHOTOS / name), imgsz=640, device="cpu", verbose=False)[0]
-    results[name] = res
     c = res.keypoints.conf.numpy()
     for i, box_conf in enumerate(res.boxes.conf.tolist()):
-        low = [KPTS[k] for k in np.where(c[i] < LOW)[0]]
+        low = [KPTS[k] for k in np.where(c[i] < 0.3)[0]]
         print(f"{name:<23} 第 {i} 人：框 {box_conf:.3f}，點信心值平均 {c[i].mean():.3f}，"
               f"低於 0.3 的點 {len(low)} 個" + (f"（{', '.join(low)}）" if low else ""))
+    results[name] = res
 
 print("\n== 5. 從點讀姿勢：鼻子、髖、腳踝的位置（y 越大越下面）==")
 ROWS = [("factory-lifting.jpg", 0, "彎腰搬箱"), ("factory-lifting.jpg", 1, "站在工作台前"),
         ("care-corridor-fall.jpg", 0, "倒在走廊"), ("care-corridor-fall.jpg", 1, "走過來的照服員")]
 rows = []
 for name, i, what in ROWS:
-    p = results[name].keypoints.xy.numpy()[i].astype(float)
+    p = results[name].keypoints.xy.numpy()[i].astype(float)     # 這個人的 (17, 2)
     hip = p[[11, 12]].mean(axis=0)
     ankle = p[[15, 16]].mean(axis=0)
     rows.append({"人": what, "鼻子 x": p[0, 0], "鼻子 y": p[0, 1], "髖 x": hip[0], "髖 y": hip[1],

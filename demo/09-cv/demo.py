@@ -62,11 +62,13 @@ for key in ["test_precision", "test_recall", "test_average_precision"]:
 print("\n== 5. groups=incident_id：同一件事不能拆到兩邊 ==")
 print("每件事被記成幾筆告警：", train.groupby("incident_id").size().value_counts().sort_index().to_dict())
 plain = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+tr_idx, te_idx = next(plain.split(X, y))
+shared = set(train["incident_id"].iloc[tr_idx]) & set(train["incident_id"].iloc[te_idx])
+print(f"StratifiedKFold      第 1 折：兩邊都出現的 incident {len(shared)} 件")
 grouped = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=0)
-for name, (tr_idx, te_idx) in [("StratifiedKFold", next(plain.split(X, y))),
-                               ("StratifiedGroupKFold", next(grouped.split(X, y, groups=train["incident_id"])))]:
-    shared = set(train["incident_id"].iloc[tr_idx]) & set(train["incident_id"].iloc[te_idx])
-    print(f"{name:<21}第 1 折：兩邊都出現的 incident {len(shared)} 件")
+tr_idx, te_idx = next(grouped.split(X, y, groups=train["incident_id"]))
+shared = set(train["incident_id"].iloc[tr_idx]) & set(train["incident_id"].iloc[te_idx])
+print(f"StratifiedGroupKFold 第 1 折：兩邊都出現的 incident {len(shared)} 件")
 
 print("\n== 6. 不分組會高估多少（梯度提升，AP）==")
 for name, groups, splitter in [("StratifiedKFold", None, plain),

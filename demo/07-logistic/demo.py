@@ -13,12 +13,12 @@ CAT = ["event_type", "location", "source"]
 df = pd.read_csv("story/data/factory/alerts.csv", parse_dates=["occurred_at"])
 fit = df[df["occurred_at"] < "2025-12-15"]
 valid = df[(df["occurred_at"] >= "2025-12-15") & (df["occurred_at"] < "2025-12-29")]
-pre = ColumnTransformer([("num", StandardScaler(), NUM),
-                         ("cat", OneHotEncoder(handle_unknown="ignore"), CAT)])
-model = make_pipeline(pre, LogisticRegression(max_iter=1000)).fit(fit[NUM + CAT], fit["label"])
 
 print("== 1. predict_proba：每筆兩個機率 ==")
 sample = valid.iloc[[0, 79, 69, 5]]
+pre = ColumnTransformer([("num", StandardScaler(), NUM),
+                         ("cat", OneHotEncoder(handle_unknown="ignore"), CAT)])
+model = make_pipeline(pre, LogisticRegression(max_iter=1000)).fit(fit[NUM + CAT], fit["label"])
 proba = model.predict_proba(sample[NUM + CAT])
 print(pd.DataFrame({"confidence": sample["confidence"].values,
                     "duration_seconds": sample["duration_seconds"].values,

@@ -35,10 +35,10 @@ print(pd.DataFrame(rows).to_string(index=False, float_format="%.3f"))
 print("\n== 3. precision_recall_curve：一次掃完所有門檻 ==")
 precision, recall, thresholds = precision_recall_curve(y, score)
 print(f"precision {len(precision)} 個、recall {len(recall)} 個、thresholds {len(thresholds)} 個")
+curve = pd.DataFrame({"threshold": thresholds, "precision": precision[:-1], "recall": recall[:-1]})
 print(f"最後一組：precision {precision[-1]:.3f}、recall {recall[-1]:.3f}（沒有對應的門檻）")
 
 print("\n== 4. 去掉最後一個，三個陣列對齊成一張表 ==")
-curve = pd.DataFrame({"threshold": thresholds, "precision": precision[:-1], "recall": recall[:-1]})
 print(curve.to_string(index=False, float_format="%.3f"))
 
 print("\n== 5. 選 HIGH：precision >= 0.9 的門檻裡，最低的那個 ==")

@@ -77,7 +77,7 @@ def capture(url):
         r.raise_for_status()
         data = r.content
     else:
-        data = (FRAMES / "frame_001.jpg").read_bytes()   # 同樣是 JPEG bytes，只是從硬碟來
+        data = (FRAMES / "frame_001.jpg").read_bytes()
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError(f"收到 {len(data)} bytes，不是完整的圖")

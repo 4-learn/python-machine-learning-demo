@@ -22,8 +22,8 @@ BACKBONE = "resnet18"  # 18 節工廠線在 valid 上選出來的骨幹
 
 print("== 1. 骨幹只負責看：每張小圖變成 512 個數字 ==")
 index = pd.read_csv(CROPS / "index.csv")
-weights = get_model_weights(BACKBONE)["IMAGENET1K_V1"]
-net = get_model(BACKBONE, weights=weights).eval()
+weights = get_model_weights("resnet18")["IMAGENET1K_V1"]
+net = get_model("resnet18", weights=weights).eval()
 net.fc = torch.nn.Identity()
 pre = weights.transforms()
 with torch.no_grad():
@@ -59,10 +59,11 @@ print(f"邏輯迴歸 fit {tr.sum()} 張：{'不到 1 秒' if seconds < 1 else '�
 
 print("\n== 4. 邏輯迴歸就是「一層線性＋壓成機率」==")
 lr = probe[-1]
+z = probe[0].transform(x[te]) @ lr.coef_[0] + lr.intercept_[0]   # 特徵 × 權重，加總，加偏差
+by_hand = 1 / (1 + np.exp(-z))                                   # 壓成 0～1 的機率
+same = np.allclose(by_hand, probe.predict_proba(x[te])[:, 1])
 print(f"coef_ {lr.coef_.shape}、intercept_ {lr.intercept_.shape}：共 {lr.coef_.size + lr.intercept_.size} 個參數")
-z = probe[0].transform(x[te]) @ lr.coef_[0] + lr.intercept_[0]
-by_hand = 1 / (1 + np.exp(-z))
-print(f"自己算 1 / (1 + exp(-(x·w + b))) 和 predict_proba 一樣：{np.allclose(by_hand, probe.predict_proba(x[te])[:, 1])}")
+print(f"自己算 1 / (1 + exp(-(x·w + b))) 和 predict_proba 一樣：{same}")
 
 print("\n== 5. predict_proba：夜間攝影機上，邏輯迴歸叫錯的那幾張 ==")
 night = index[te].assign(alert_機率=probe.predict_proba(x[te])[:, 1].round(3), 預測=probe.predict(x[te]))
@@ -81,8 +82,8 @@ for name, a, b in [("隨機切（4 支攝影機混在一起）", rnd_tr, rnd_te)
 print(pd.DataFrame(rows).to_string(index=False))
 
 print("\n== 7. joblib：骨幹名稱和 Pipeline 存在一起 ==")
-path = OUT / "probe.joblib"
-joblib.dump({"backbone": BACKBONE, "probe": probe}, path)
-saved = joblib.load(path)
-print(f"probe.joblib：{path.stat().st_size:,} bytes；內容 {list(saved)}，骨幹 {saved['backbone']}")
-print(f"讀回來的 Pipeline，test 的答案和原本相同：{bool((saved['probe'].predict(x[te]) == probe.predict(x[te])).all())}")
+joblib.dump({"backbone": BACKBONE, "probe": probe}, OUT / "probe.joblib")
+saved = joblib.load(OUT / "probe.joblib")
+same = (saved["probe"].predict(x[te]) == probe.predict(x[te])).all()
+print(f"probe.joblib：{(OUT / 'probe.joblib').stat().st_size:,} bytes；內容 {list(saved)}，骨幹 {saved['backbone']}")
+print(f"讀回來的 Pipeline，test 的答案和原本相同：{bool(same)}")

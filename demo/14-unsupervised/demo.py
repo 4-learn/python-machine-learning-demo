@@ -8,6 +8,9 @@ alerts = pd.read_csv("story/data/factory/alerts.csv")
 alerts = alerts[alerts["occurred_at"] < "2025-12-15"]          # 只用前 6 週（fit）
 COLS = ["confidence", "duration_seconds", "light_lux"]
 X = alerts[COLS]
+km_raw = KMeans(n_clusters=3, n_init=10, random_state=0).fit(X)
+Z = StandardScaler().fit_transform(X)
+km = KMeans(n_clusters=3, n_init=10, random_state=0).fit(Z)
 
 
 def describe(groups):
@@ -20,12 +23,9 @@ def describe(groups):
 
 print("== 1. 沒縮放就分群：三欄的數字大小差很多 ==")
 print(X.std().round(3).to_string())
-km_raw = KMeans(n_clusters=3, n_init=10, random_state=0).fit(X)
 print(describe(km_raw.labels_))
 
 print("\n== 2. StandardScaler 之後再分群 ==")
-Z = StandardScaler().fit_transform(X)
-km = KMeans(n_clusters=3, n_init=10, random_state=0).fit(Z)
 print(describe(km.labels_))
 
 print("\n== 3. n_init：起點不同，結果可能不同 ==")

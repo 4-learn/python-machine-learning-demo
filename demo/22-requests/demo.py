@@ -11,8 +11,6 @@ sys.path.insert(0, str(ROOT / "story"))
 import platform_mock  # noqa: E402  告警平台的替身
 
 profile = json.loads((ROOT / "story" / "profiles" / "factory.json").read_text(encoding="utf-8"))
-URL = platform_mock.start(profile)          # 換成 "http://localhost:8000" 就是送到你自己架的平台
-KEY = {"X-API-Key": "dev-device"}
 
 # 偵測器在一張照片上找到的框：cls 1＝head（沒戴安全帽），0＝helmet
 boxes = [
@@ -25,17 +23,18 @@ photo = {"image": "test_001.jpg", "source": "camera_04", "location": "dock_01",
 
 print("== 1. 偵測框 → 事件 JSON（平台格式） ==")
 hits = [b for b in boxes if b["cls"] == 1 and b["conf"] >= profile["detector_conf"]]
-print(f"{len(boxes)} 個框，類別 1 且信心值 ≥ {profile['detector_conf']} 的：{len(hits)} 個")
 event = {"event_type": "no_helmet", "location": photo["location"], "source": photo["source"],
          "confidence": max(b["conf"] for b in hits), "occurred_at": photo["occurred_at"].replace(" ", "T"),
          "detail": {"duration_seconds": photo["duration_seconds"], "light_lux": photo["light_lux"],
                     "person_id": photo["person_id"], "image": photo["image"]}}
+print(f"{len(boxes)} 個框，類別 1 且信心值 ≥ {profile['detector_conf']} 的：{len(hits)} 個")
 print(json.dumps(event, ensure_ascii=False, indent=1))
 
 print("\n== 2. requests.post：送出去，看狀態碼和回應 ==")
+URL = platform_mock.start(profile)          # 換成 "http://localhost:8000" 就是送到你自己架的平台
+KEY = {"X-API-Key": "dev-device"}
 r = requests.post(f"{URL}/events", json=event, headers=KEY, timeout=5)
-print(f"status_code：{r.status_code}")
-print(f"r.json()：{r.json()}")
+print(r.status_code, r.json())
 
 print("\n== 3. 平台拒收的兩種情況 ==")
 r = requests.post(f"{URL}/events", json=event, headers={"X-API-Key": "wrong-key"}, timeout=5)
@@ -53,8 +52,9 @@ print("\n== 5. 平台沒回應：timeout ==")
 silent = socket.socket()                      # 接受連線、但永遠不回答的「平台」
 silent.bind(("127.0.0.1", 0))
 silent.listen()
+silent_port = silent.getsockname()[1]
 try:
-    requests.post(f"http://127.0.0.1:{silent.getsockname()[1]}/events", json=event, headers=KEY, timeout=0.5)
+    requests.post(f"http://127.0.0.1:{silent_port}/events", json=event, headers=KEY, timeout=0.5)
 except requests.exceptions.Timeout as e:
     print(f"等了 0.5 秒沒回應 → {type(e).__name__}")
 silent.close()

@@ -13,7 +13,6 @@ import platform_mock  # noqa: E402  告警平台的替身：事件類型不在�
 
 profile = json.loads((ROOT / "story" / "profiles" / "factory.json").read_text(encoding="utf-8"))
 KEY = {"X-API-Key": "dev-device"}
-url = platform_mock.start(profile)
 
 
 def post(event):
@@ -29,10 +28,6 @@ pose_event = {"event_type": "unsafe_lifting", "location": "aisle_01", "source": 
 yolo_event = {"event_type": "no_helmet", "location": "dock_01", "source": "camera_03", "confidence": 0.968,
               "occurred_at": "2026-01-19T10:05:00", "detail": {"duration_seconds": 74.0, "image": "test_001.jpg"}}
 
-print("== 1. 設定檔現在收哪些事件類型 ==")
-print(list(profile["event_types"]))
-
-
 
 def send_all(pairs):
     rows = []
@@ -43,6 +38,9 @@ def send_all(pairs):
     return pd.DataFrame(rows).to_string(index=False)
 
 
+url = platform_mock.start(profile)
+print("== 1. 設定檔現在收哪些事件類型 ==")
+print(list(profile["event_types"]))
 print("\n== 2. 三種事件送進同一個平台 ==")
 print(send_all([("ROI", roi_event), ("骨架", pose_event), ("YOLO", yolo_event)]))
 

@@ -21,7 +21,8 @@ print(toy.to_string())
 
 print("\n== 3. mean_absolute_error：平均差幾筆 ==")
 truth, guess = [50, 55, 52], [48, 60, 52]
-print(f"實際 {truth}、預測 {guess} → MAE {mean_absolute_error(truth, guess):.3f}")
+mae = mean_absolute_error(truth, guess)
+print(f"實際 {truth}、預測 {guess} → MAE {mae:.3f}")
 
 print("\n== 4. LinearRegression：fit 之後的 coef_ 和 intercept_ ==")
 s = pd.read_csv("story/data/factory/stream/detections.csv")
@@ -30,8 +31,8 @@ h = s.drop_duplicates().set_index("ts")["confidence"].resample("1h").count().ren
 h["last_hour"] = h["count"].shift(1)
 h = h.dropna()
 train, test = h[h.index < "2026-01-09"], h[h.index >= "2026-01-09"]
-print(f"每小時一列：學 {len(train)} 小時（01-05～01-08）、考 {len(test)} 小時（01-09 起）")
 model = LinearRegression().fit(train[["last_hour"]], train["count"])
+print(f"每小時一列：學 {len(train)} 小時（01-05～01-08）、考 {len(test)} 小時（01-09 起）")
 print(f"coef_ = {model.coef_.round(3)}、intercept_ = {model.intercept_:.3f}")
 x = 50
 print(f"上一小時 {x} 筆 → predict {model.predict(pd.DataFrame({'last_hour': [x]}))[0]:.3f}"

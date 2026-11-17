@@ -24,8 +24,8 @@ def sha256(path):
 print("== 1. 考卷存成 CSV，算指紋 ==")
 path = OUT / "eval-set.csv"
 exam.to_csv(path, index=False, lineterminator="\n")
-print(path.read_text(), end="")
 first = sha256(path)
+print(path.read_text(), end="")
 print(f"sha256：{first}")
 
 print("\n== 2. 同樣的內容再寫一次，指紋一樣 ==")

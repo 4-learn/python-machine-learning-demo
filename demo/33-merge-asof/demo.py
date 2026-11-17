@@ -48,8 +48,8 @@ print("\n== 6. 真的資料：健康線的床墊壓力（每分鐘一筆、掉�
 s = pd.read_csv("story/data/care/stream/sensor.csv")
 s["ts"] = pd.to_datetime(s["ts"])
 grid = pd.DataFrame({"minute": pd.date_range(s["ts"].min(), s["ts"].max(), freq="1min")})
-exact = grid.merge(s, left_on="minute", right_on="ts", how="left")
 for tol in ["1min", "5min"]:
     a = pd.merge_asof(grid, s.sort_values("ts"), left_on="minute", right_on="ts", tolerance=pd.Timedelta(tol))
     print(f"tolerance {tol}：對不到 {int(a['value'].isna().sum())} 格")
+exact = grid.merge(s, left_on="minute", right_on="ts", how="left")
 print(f"merge（時間相等）：對不到 {int(exact['value'].isna().sum())} 格；一共 {len(grid)} 格")

@@ -24,43 +24,41 @@ toy = pd.DataFrame({"姿勢": ["站著", "微微前傾", "彎腰", "躺平"],
                     "肩 x": [100, 110, 160, 180], "肩 y": [100, 102, 150, 300],
                     "髖 x": [100, 100, 100, 100], "髖 y": [200, 200, 200, 300]})
 dx = np.abs(toy["肩 x"] - toy["髖 x"])
-dy = np.abs(toy["髖 y"] - toy["肩 y"])
-toy["dx"], toy["dy"] = dx, dy
-toy["弧度"] = np.arctan2(dx, dy).round(3)
+dy = np.abs(toy["髖 y"] - toy["肩 y"])          # y 往下變大，所以是「髖 − 肩」
 toy["角度"] = np.degrees(np.arctan2(dx, dy)).round(1)
-print(toy.to_string(index=False))
+toy["dx"], toy["dy"], toy["弧度"] = dx, dy, np.arctan2(dx, dy).round(3)
+print(toy[["姿勢", "肩 x", "肩 y", "髖 x", "髖 y", "dx", "dy", "弧度", "角度"]].to_string(index=False))
 print(f"躺平時 dy = 0：np.arctan2(80, 0) → {np.degrees(np.arctan2(80, 0)):.1f} 度，不用自己除，不會除以 0")
 
 print("\n== 2. 向量化：13,440 格一次算完，不寫迴圈 ==")
 df = pd.read_csv(ROOT / "story" / "data" / "care" / "pose" / "poses.csv", keep_default_na=False)
 xs = df[[f"{k}_x" for k in KPTS]].to_numpy()          # (格數, 17)
 ys = df[[f"{k}_y" for k in KPTS]].to_numpy()
-cs = df[[f"{k}_c" for k in KPTS]].to_numpy()
-print(f"xs {xs.shape}、ys {ys.shape}、cs {cs.shape}")
-
 
 def features(xs, ys):
-    """每一格 → 軀幹角度（0＝直立、90＝躺平）與外框的寬÷高。"""
     sx, sy = np.nanmean(xs[:, [5, 6]], axis=1), np.nanmean(ys[:, [5, 6]], axis=1)       # 肩中點
     hx, hy = np.nanmean(xs[:, [11, 12]], axis=1), np.nanmean(ys[:, [11, 12]], axis=1)   # 髖中點
     angle = np.degrees(np.arctan2(np.abs(sx - hx), np.abs(hy - sy)))
     width = np.nanmax(xs, axis=1) - np.nanmin(xs, axis=1)
     height = np.nanmax(ys, axis=1) - np.nanmin(ys, axis=1)
-    return pd.DataFrame({"torso_angle": angle, "aspect": width / height}, index=df.index[:len(xs)])
+    return pd.DataFrame({"torso_angle": angle, "aspect": width / height})
 
 
+cs = df[[f"{k}_c" for k in KPTS]].to_numpy()
+print(f"xs {xs.shape}、ys {ys.shape}、cs {cs.shape}")
 feat = features(xs, ys)
 print(feat.join(df["posture"]).groupby("posture").median().round(3).to_string())
 
 print("\n== 3. 縮放、平移：像素座標全變了，特徵不變 ==")
 sample = df.sample(200, random_state=0).index
-base = features(xs[sample], ys[sample])
 rows = []
+base = features(xs[sample], ys[sample])
 for name, k, (tx, ty) in [("原始 640x480", 1.0, (0, 0)), ("縮成一半（遠一點的人）", 0.5, (0, 0)),
                           ("放大 1.6 倍（1024 寬的照片）", 1.6, (0, 0)), ("往右下平移 (100, 50)", 1.0, (100, 50))]:
     f = features(xs[sample] * k + tx, ys[sample] * k + ty)
+    angle_change = np.abs(f["torso_angle"].values - base["torso_angle"].values).max()
     rows.append({"變換": name, "髖 y（像素）": (ys[sample][:, [11, 12]] * k + ty).mean(axis=1)[0],
-                 "torso_angle 最大變化": np.abs(f["torso_angle"].values - base["torso_angle"].values).max(),
+                 "torso_angle 最大變化": angle_change,
                  "aspect 最大變化": np.abs(f["aspect"].values - base["aspect"].values).max()})
 print(pd.DataFrame(rows).round(3).to_string(index=False))
 
@@ -98,12 +96,13 @@ print("\n== 8. 依人分組切：同一個人不能同時在兩邊 ==")
 df["aspect"] = masked["aspect"]
 X, y = df[["torso_angle", "aspect", "change_1s"]], df["alert"].astype(int)
 tr_r, te_r = train_test_split(np.arange(len(df)), test_size=0.25, random_state=0)
-tr_g, te_g = next(GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=0).split(X, y, groups=df["subject_id"]))
 rows = []
+tr_g, te_g = next(GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=0)
+                  .split(X, y, groups=df["subject_id"]))
 for name, tr, te in [("隨機切格子", tr_r, te_r), ("依人分組（GroupShuffleSplit）", tr_g, te_g)]:
+    both_sides = set(df["subject_id"].iloc[tr]) & set(df["subject_id"].iloc[te])
     model = HistGradientBoostingClassifier(random_state=0).fit(X.iloc[tr], y.iloc[tr])
     pred = model.predict(X.iloc[te])
-    both_sides = set(df["subject_id"].iloc[tr]) & set(df["subject_id"].iloc[te])
     rows.append({"切法": name, "test 格數": len(te), "兩邊都有的人": len(both_sides),
                  "precision": precision_score(y.iloc[te], pred), "recall": recall_score(y.iloc[te], pred)})
 print(pd.DataFrame(rows).round(3).to_string(index=False))

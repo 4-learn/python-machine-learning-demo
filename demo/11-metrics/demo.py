@@ -19,6 +19,7 @@ print(pd.DataFrame(cm, index=["事後：不用叫", "事後：要叫"], columns=
 
 print("\n== 2. ravel()：拆成 tn fp fn tp ==")
 tn, fp, fn, tp = cm.ravel()
+tn2, fp2, fn2, tp2 = confusion_matrix(y_pred, y_true).ravel()   # 參數放反
 print(f"tn={tn}  fp={fp}（誤報）  fn={fn}（漏報）  tp={tp}")
 
 print("\n== 3. precision 和 recall 從哪兩格來 ==")
@@ -27,7 +28,6 @@ print(f"recall    = tp / (tp + fn) = {tp}/{tp + fn} = {tp / (tp + fn):.3f}   真
 print(f"precision_score {precision_score(y_true, y_pred):.3f}、recall_score {recall_score(y_true, y_pred):.3f}")
 
 print("\n== 4. 參數放反：fp 和 fn 對調 ==")
-tn2, fp2, fn2, tp2 = confusion_matrix(y_pred, y_true).ravel()
 print(f"confusion_matrix(y_pred, y_true) 拆出來：fp={fp2}  fn={fn2}")
 
 print("\n== 5. classification_report：兩個類別一次看 ==")

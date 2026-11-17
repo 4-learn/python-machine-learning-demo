@@ -18,9 +18,9 @@ print(table.to_string())
 print("\n== 2. np.histogram：用上線前的十分位數當格子，數每格占幾成 ==")
 edges = np.quantile(before, np.linspace(0, 1, 11))
 edges[0], edges[-1] = -np.inf, np.inf
-print("格子邊界：", np.round(edges[1:-1], 3).tolist())
 share = pd.DataFrame({name: np.histogram(s, edges)[0] / len(s)
                       for name, s in [("上線前", before), ("沒變", same), ("被移動", moved)]})
+print("格子邊界：", np.round(edges[1:-1], 3).tolist())
 share.index = [f"第{i + 1}格" for i in range(10)]
 print(share.T.round(3).to_string())
 

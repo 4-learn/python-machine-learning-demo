@@ -24,8 +24,8 @@ print(f"去掉之後：{len(raw)} → {len(stream)} 筆")
 
 print("\n== 3. set_index＋sort_index：時間當索引、照時間排好 ==")
 stream = stream.set_index("ts").sort_index()
-print(stream.to_string())
 gaps = stream.index.to_series().diff()
+print(stream.to_string())
 print(f"相鄰兩筆的時間差：最短 {gaps.min()}、最長 {gaps.max()}")
 
 print("\n== 4. resample('1min').agg：每分鐘一格 ==")

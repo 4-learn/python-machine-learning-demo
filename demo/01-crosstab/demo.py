@@ -20,4 +20,4 @@ print("\n== 3. pd.crosstab：決定 × 結果 ==")
 print(pd.crosstab(alerts["decision"], alerts["status"]).to_string())
 
 print("\n== 4. margins=True：加上合計 ==")
-print(pd.crosstab(alerts["decision"], alerts["status"], margins=True, margins_name="合計").to_string())
+print(pd.crosstab(alerts["decision"], alerts["status"], margins=True, margins_name="合計"))

@@ -27,7 +27,7 @@ print("剩下：", rest.columns.tolist())
 print("比白名單多出：", [c for c in rest.columns if c not in X.columns])
 
 print("\n== 5. crosstab：resolved_at 有值，label 就是 1 ==")
-print(pd.crosstab(df["resolved_at"].notna(), df["label"]).to_string())
+print(pd.crosstab(df["resolved_at"].notna(), df["label"]))
 
 print("\n== 6. crosstab：acked_at 有值，label 是 1 的機會大很多 ==")
-print(pd.crosstab(df["acked_at"].notna(), df["label"], normalize="index").round(3).to_string())
+print(pd.crosstab(df["acked_at"].notna(), df["label"], normalize="index").round(3))

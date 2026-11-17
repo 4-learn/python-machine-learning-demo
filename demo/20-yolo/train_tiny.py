@@ -42,8 +42,8 @@ with tempfile.TemporaryDirectory() as tmp:
     start = time.perf_counter()
     model = YOLO(str(ROOT / "models" / "yolo11n.pt"))
     metrics = model.train(data=str(tmp / "data.yaml"), epochs=3, imgsz=320, batch=8, device="cpu", workers=0,
-                seed=0, deterministic=True, verbose=False, plots=False,
-                project=str(OUT), name=f"tiny-{LINE}", exist_ok=True)
+                          seed=0, deterministic=True, verbose=False, plots=False,
+                          project=str(OUT), name=f"tiny-{LINE}", exist_ok=True)
     print(f"花了 {time.perf_counter() - start:.0f} 秒（每台電腦不一樣）")
     map50 = metrics.results_dict["metrics/mAP50(B)"]
     print(f"val 10 張的 mAP50：{map50:.2f}（教師用 240 張、30 輪的模型是 0.995）")

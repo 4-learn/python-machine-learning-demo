@@ -88,13 +88,12 @@ print(f"工廠畫面 64 張特徵圖，平均反應最強的 3 個：{top3.tolis
 print("權重加總（不是 0 就會對整片顏色有反應，Sobel x 是 0）：" + "、".join(f"第 {i} 個 {w[i].sum():+.3f}" for i in [*top3, best]))
 
 print("\n== 7. 把 64 個濾波器拼成一張圖 ==")
+OUT.mkdir(exist_ok=True)
 tiles = []
 for k, m in zip(w.numpy(), size):                          # (3, 7, 7)；0 畫成灰色，正的亮、負的暗
     k = (k / max(m, 1e-3) * 0.5 + 0.5) * 255                # 各自放大到看得見；沒在用的（幾乎全 0）維持灰色
     tile = cv2.resize(k.transpose(1, 2, 0).astype(np.uint8), (35, 35), interpolation=cv2.INTER_NEAREST)
     tiles.append(cv2.copyMakeBorder(tile, 2, 2, 2, 2, cv2.BORDER_CONSTANT, value=(255, 255, 255)))
-rows = [np.hstack(tiles[i:i + 8]) for i in range(0, 64, 8)]
-grid = cv2.cvtColor(np.vstack(rows), cv2.COLOR_RGB2BGR)    # 權重是 RGB 順序，存檔前轉 BGR
-OUT.mkdir(exist_ok=True)
+grid = cv2.cvtColor(np.vstack([np.hstack(tiles[i:i + 8]) for i in range(0, 64, 8)]), cv2.COLOR_RGB2BGR)
 cv2.imwrite(str(OUT / "conv1-filters.png"), grid)
 print(f"存到 demo/28-first-layer/out/conv1-filters.png：{grid.shape}（8×8 格，每格一個濾波器放大 5 倍）")

@@ -15,7 +15,6 @@ SCENES = ROOT / "story" / "data" / "factory" / "scenes"
 
 
 def iou(a, b):
-    """兩個框 (x1, y1, x2, y2)：重疊的面積 ÷ 合起來的面積。"""
     x1, y1 = max(a[0], b[0]), max(a[1], b[1])      # 重疊區的左上角
     x2, y2 = min(a[2], b[2]), min(a[3], b[3])      # 重疊區的右下角
     inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)  # 不重疊時寬或高是負的，取 0
@@ -52,7 +51,7 @@ def match(pred, truth, iou_min=0.5):
             if j not in used and table[i, j] > best:
                 best, best_j = float(table[i, j]), j
         if best >= iou_min:
-            used.add(best_j)
+            used.add(best_j)          # TP；沒配上的就是 FP
             rows.append({"conf": score, "最重疊": f"標註{best_j}", "IoU": round(best, 3), "結果": "TP"})
         else:
             j = int(table[i].argmax()) if truth else None
