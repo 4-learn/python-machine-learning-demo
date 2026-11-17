@@ -94,14 +94,14 @@ function roles() {
   b += arrow([[182, 160], [207, 160], [207, 238], [232, 238]]);
   // sklearn 層
   b += `<rect x="600" y="92" width="300" height="268" rx="10" fill="${C.sk.fill}" stroke="${C.sk.stroke}" stroke-width="1.6"/>`;
-  b += text(750, 116, "scikit-learn", { size: 16, bold: true, fill: C.sk.text });
-  b += text(750, 146, "從特徵學判斷", { size: 13.5, bold: true });
-  b += text(750, 168, "樹模型、邏輯迴歸、KNN…", { size: 12.5, fill: C.sub });
-  b += text(750, 200, "偵測結果、骨架也可以再交給它判斷", { size: 12.5, fill: C.sub });
+  b += text(626, 116, "scikit-learn", { size: 16, bold: true, fill: C.sk.text, anchor: "start" });
+  b += text(626, 146, "從特徵學判斷", { size: 13.5, bold: true, anchor: "start" });
+  b += text(626, 168, "樹模型、邏輯迴歸、KNN…", { size: 12.5, fill: C.sub, anchor: "start" });
+  b += text(626, 200, "偵測結果、骨架也可以再交給它判斷", { size: 12.5, fill: C.sub, anchor: "start" });
   b += `<line x1="626" y1="262" x2="874" y2="262" stroke="${C.sk.stroke}" stroke-opacity="0.35"/>`;
-  b += text(750, 286, "評估：所有候選的同一把尺", { size: 13.5, bold: true });
-  b += text(750, 308, "切割、交叉驗證、指標、門檻", { size: 12.5, fill: C.sub });
-  b += text(750, 330, "（PyTorch 做的模型也用它量）", { size: 12.5, fill: C.sub });
+  b += text(626, 286, "評估：所有候選的同一把尺", { size: 13.5, bold: true, anchor: "start" });
+  b += text(626, 308, "切割、交叉驗證、指標、門檻", { size: 12.5, fill: C.sub, anchor: "start" });
+  b += text(626, 330, "（PyTorch 做的模型也用它量）", { size: 12.5, fill: C.sub, anchor: "start" });
   b += arrow([[532, 145], [600, 145]], { label: [566, 134, "特徵"] });
   b += arrow([[182, 325], [600, 325]], { label: [391, 313, "表格直接進來"] });
   b += arrow([[532, 238], [600, 238]], { dash: true, label: [566, 226, "偵測結果"] });
