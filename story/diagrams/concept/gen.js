@@ -58,7 +58,7 @@ function flow() {
   // 同一把尺
   b += `<rect x="712" y="84" width="236" height="200" rx="10" fill="${C.key.fill}" stroke="${C.key.stroke}" stroke-width="1.8"/>`;
   b += text(830, 112, "③ 用同一把尺量", { size: 16, bold: true, fill: C.key.text });
-  ["同一種切法（不偷看考卷）", "同一個指標（precision／recall）", "同一份 valid、test 只開一次"].forEach((s, i) => (b += text(830, 148 + i * 26, "· " + s, { size: 13, fill: C.ink })));
+  ["同一種切法（不偷看考卷）", "同一個指標（precision／recall）", "同一份 valid、test 只開一次"].forEach((s, i) => (b += text(732, 148 + i * 26, "· " + s, { size: 13, fill: C.ink, anchor: "start" })));
   b += text(830, 236, "多半用 scikit-learn 的工具", { size: 12.5, fill: C.sub });
   b += text(830, 258, "（偵測的 IoU、mAP 用 ultralytics）", { size: 12, fill: C.sub });
   [117, 187, 254].forEach((y) => (b += arrow([[660, y], [712, y]], { color: C.key.stroke, mk: "k" })));
@@ -71,7 +71,7 @@ function flow() {
   // 對應節次
   b += text(32, 384, "這門課：", { size: 12.5, bold: true, fill: C.sub, anchor: "start" });
   b += text(96, 384, "① 01–02　② 03、05–08、17–18、20　③ 04、09–12　④ 10、19　⑤ 12、15、22–24（進階：34 漂移、41 驗收）", { size: 12.5, fill: C.sub, anchor: "start" });
-  return svg(1172, 410, "業界的機器學習開發流程", "先看資料決定候選，每個候選用同一把尺量，比完才選；PyTorch 是候選之一，不是評估之後的下一步", b);
+  return svg(1172, 410, "業界的機器學習開發流程", "", b);
 }
 
 // ---------------------------------------------------------------- 圖 2：工具分工
@@ -111,7 +111,7 @@ function roles() {
   // 註
   b += text(32, 400, "不是互相取代：表格資料上神經網路通常沒有比較準（這門課實測：判斷器用 PyTorch 神經網路 AP 0.80–0.85，scikit-learn 梯度提升 0.87）", { size: 12.5, fill: C.sub, anchor: "start" });
   b += text(32, 422, "這門課：scikit-learn 03–15、19、35–40　PyTorch／torchvision 17–18、28　ultralytics 20–21、29", { size: 12.5, fill: C.sub, anchor: "start" });
-  return svg(1172, 446, "工具分工：scikit-learn、PyTorch、ultralytics", "各管各的：PyTorch 把原始資料變特徵，scikit-learn 從特徵學判斷、也負責量所有候選；ultralytics 是建在 PyTorch 上的偵測工具", b);
+  return svg(1172, 446, "工具分工：scikit-learn、PyTorch、ultralytics", "", b);
 }
 fs.writeFileSync("concept-flow.svg", flow());
 fs.writeFileSync("concept-tools.svg", roles());
