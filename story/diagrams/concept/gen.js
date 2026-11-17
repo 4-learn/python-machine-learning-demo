@@ -44,9 +44,9 @@ ${body}
 function flow() {
   let b = "";
   const Y = 120, H = 64;
-  b += box(32, Y, 150, H, ["① 看資料", "表格？影像？文字？"]);
+  b += box(32, Y, 150, H, ["① 看資料", "pandas"]);
   arrow; b += arrow([[182, Y + H / 2], [222, Y + H / 2]]);
-  b += box(222, Y, 170, H, ["② 決定候選", "資料種類決定用誰"]);
+  b += box(222, Y, 170, H, ["② 決定候選", "scikit-learn 官方的選模型地圖"]);
   // 兩條候選
   b += box(450, 92, 210, 50, ["表格：樹模型、邏輯迴歸", "scikit-learn、XGBoost"], { style: C.sk, size: 13.5 });
   b += box(450, 162, 210, 50, ["影像、文字：預訓練模型", "PyTorch、ultralytics"], { style: C.pt, size: 13.5 });
