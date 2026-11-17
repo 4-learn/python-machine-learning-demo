@@ -188,7 +188,7 @@ def choose_conf(pred, truth, min_recall):
 
 
 def to_events(detections, conf_min):
-    """一張圖只要有一個「要注意」的框 ≥ 門檻，就變成一筆 API 課格式的事件。"""
+    """一張圖只要有一個「要注意」的框 ≥ 門檻，就變成一筆平台格式的事件。"""
     meta = pd.read_csv(SCENES / "meta.csv").set_index("image")
     hits = detections[(detections["cls"] == 1) & (detections["conf"] >= conf_min)]
     events = []
@@ -202,7 +202,7 @@ def to_events(detections, conf_min):
 
 
 def platform_url():
-    """有設 PLATFORM_URL 就送到那裡（例如 API 課的 server），沒有就啟動替身平台。"""
+    """有設 PLATFORM_URL 就送到那裡（例如你自己架的平台），沒有就啟動替身平台。"""
     url = os.getenv("PLATFORM_URL")
     if url:
         return url

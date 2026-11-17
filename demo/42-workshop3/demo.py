@@ -9,7 +9,7 @@ import requests
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "story"))
-import platform_mock  # noqa: E402  API 課平台的替身：事件類型不在設定檔就回 400
+import platform_mock  # noqa: E402  告警平台的替身：事件類型不在設定檔就回 400
 
 profile = json.loads((ROOT / "story" / "profiles" / "factory.json").read_text(encoding="utf-8"))
 KEY = {"X-API-Key": "dev-device"}

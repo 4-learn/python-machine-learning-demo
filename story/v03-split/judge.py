@@ -1,4 +1,4 @@
-"""告警判斷器：替 API 課的平台決定「這筆告警要不要叫人」（ML 課進度存檔 v03）。
+"""告警判斷器：替告警平台決定「這筆告警要不要叫人」（ML 課進度存檔 v03）。
 
 執行（在這個資料夾裡）：
     LINE=factory python judge.py     # 工廠線
@@ -26,7 +26,7 @@ def load_alerts():
 
 
 def platform_rule(df):
-    """API 課 v0.12 的規則：信心值 0.8 以上自動開告警、0.5 到 0.8 待人確認、其餘只記錄。"""
+    """平台預設的規則：信心值 0.8 以上自動開告警、0.5 到 0.8 待人確認、其餘只記錄。"""
     return pd.cut(df["confidence"], bins=[0, 0.5, 0.8, 1.01], right=False,
                   labels=["log_only", "require_review", "auto_alert"])
 

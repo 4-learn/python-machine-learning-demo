@@ -1,4 +1,4 @@
-"""22｜requests：把偵測框變成 API 課格式的事件，POST 到平台，處理狀態碼、錯誤與 timeout。"""
+"""22｜requests：把偵測框變成平台格式的事件，POST 到平台，處理狀態碼、錯誤與 timeout。"""
 import json
 import socket
 import sys
@@ -8,10 +8,10 @@ import requests
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "story"))
-import platform_mock  # noqa: E402  API 課平台的替身（行為照 v0.12）
+import platform_mock  # noqa: E402  告警平台的替身
 
 profile = json.loads((ROOT / "story" / "profiles" / "factory.json").read_text(encoding="utf-8"))
-URL = platform_mock.start(profile)          # 換成 "http://localhost:8000" 就是送到你自己的 API 課 server
+URL = platform_mock.start(profile)          # 換成 "http://localhost:8000" 就是送到你自己架的平台
 KEY = {"X-API-Key": "dev-device"}
 
 # 偵測器在一張照片上找到的框：cls 1＝head（沒戴安全帽），0＝helmet
@@ -23,7 +23,7 @@ boxes = [
 photo = {"image": "test_001.jpg", "source": "camera_04", "location": "dock_01",
          "occurred_at": "2026-01-05 01:37:00", "duration_seconds": 77.8, "light_lux": 70, "person_id": "W004"}
 
-print("== 1. 偵測框 → 事件 JSON（API 課格式） ==")
+print("== 1. 偵測框 → 事件 JSON（平台格式） ==")
 hits = [b for b in boxes if b["cls"] == 1 and b["conf"] >= profile["detector_conf"]]
 print(f"{len(boxes)} 個框，類別 1 且信心值 ≥ {profile['detector_conf']} 的：{len(hits)} 個")
 event = {"event_type": "no_helmet", "location": photo["location"], "source": photo["source"],

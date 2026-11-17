@@ -3,7 +3,7 @@
     python tools/build_story_data.py           # 重建 story/data/ 並寫 MANIFEST.json
     python tools/build_story_data.py --check   # 重建到暫存目錄比對 MANIFEST
 
-故事：API 課做出的告警平台已經試用 10 週。每一筆告警最後由值班的人處理成
+故事：告警平台已經試用 10 週。每一筆告警最後由值班的人處理成
 resolved（真的要處理）或 dismissed（誤報）。這份處理紀錄就是 ML 的標籤。
 
 兩條線欄位完全相同，程式只有一份；差別只在資料（data/factory、data/care）。
@@ -135,7 +135,7 @@ def simulate(line: str, rng: np.random.Generator) -> pd.DataFrame:
 
 
 def write_new_events(df: pd.DataFrame, path: Path) -> None:
-    """Workshop 1 用：最後 2 週挑 8 筆，轉成 API 課的事件格式（每個 incident 只取第一筆）。"""
+    """Workshop 1 用：最後 2 週挑 8 筆，轉成平台的事件格式（每個 incident 只取第一筆）。"""
     test = df[df.occurred_at >= "2025-12-29"].drop_duplicates("incident_id")
     picks = pd.concat([test[test.label == 1].sample(3, random_state=1),
                        test[test.label == 0].sample(5, random_state=1)]).sort_values("occurred_at")

@@ -2,7 +2,7 @@
 // 繪圖引擎沿用 fastapi-workshop/story/diagrams/gen.js，只換掉元件定義。
 //
 // 每個元件記著 since（第幾節出現）、until（最後出現在第幾節，可省略）、
-// changed（哪幾節改過）。since 是 "00" 的是 API 課就做好的平台，永遠是灰色。
+// changed（哪幾節改過）。since 是 "00" 的是一開始就有的告警平台，永遠是灰色。
 //
 // 用法：node gen.js 12 > v12.svg
 //       node gen.js all          （在這個資料夾產出 v01–v42）
@@ -85,7 +85,7 @@ function edge(pts, since, opts = {}) {
 
 // ---------- 外框 ----------
 el("pytest", "frame", 186, 470, 846, 446, ["pytest：判斷器的自動驗收"], "41", { dashed: true });
-el("f_platform", "frame", 670, 112, 340, 336, ["API 課的告警平台"], "00", { badge: false });
+el("f_platform", "frame", 670, 112, 340, 336, ["告警平台"], "00", { badge: false });
 el("f_det", "frame", 196, 112, 404, 336, ["偵測器"], "16", { badge: false });
 el("f_judge", "frame", 196, 480, 824, 400, ["告警判斷器"], "01", { badge: false });
 
@@ -107,7 +107,7 @@ el("d_posef", "service", 340, 326, 118, 46, ["姿勢特徵", "時間窗口"], "3
 el("d_send", "service", 468, 326, 118, 46,
   [["22", ["送事件", "requests.post"]], ["42", ["送事件", "＋ROI／骨架事件"]]], "22", { changed: ["23", "42"] });
 
-// ---------- API 課的平台（灰色，已完成） ----------
+// ---------- 告警平台（灰色，已完成） ----------
 el("p_events", "port", 686, 158, 150, 30, ["POST /events"], "00", { badge: false });
 el("p_guard", "service", 846, 154, 148, 40,
   [["00", ["防呆分流", "信心值 0.8／0.5"]], ["23", ["防呆分流", "問判斷器"]]], "00", { badge: false, changed: ["23"] });

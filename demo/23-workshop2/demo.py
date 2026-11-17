@@ -8,7 +8,7 @@ import requests
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "story"))
-import platform_mock  # noqa: E402  API 課平台的替身：detail 裡有 judge.decision 時改聽判斷器的
+import platform_mock  # noqa: E402  告警平台的替身：detail 裡有 judge.decision 時改聽判斷器的
 
 profile = json.loads((ROOT / "story" / "profiles" / "factory.json").read_text(encoding="utf-8"))
 KEY = {"X-API-Key": "dev-device"}

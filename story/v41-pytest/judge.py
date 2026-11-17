@@ -1,4 +1,4 @@
-"""告警判斷器：替 API 課的平台決定「這筆告警要不要叫人」（ML 課進度存檔 v15）。
+"""告警判斷器：替告警平台決定「這筆告警要不要叫人」（ML 課進度存檔 v15）。
 
 執行（在這個資料夾裡）：
     LINE=factory python judge.py     # 工廠線
@@ -45,7 +45,7 @@ def load_alerts():
 
 
 def platform_rule(df):
-    """API 課 v0.12 的規則：信心值 0.8 以上自動開告警、0.5 到 0.8 待人確認、其餘只記錄。"""
+    """平台預設的規則：信心值 0.8 以上自動開告警、0.5 到 0.8 待人確認、其餘只記錄。"""
     return pd.cut(df["confidence"], bins=[0, 0.5, 0.8, 1.01], right=False,
                   labels=["log_only", "require_review", "auto_alert"])
 
@@ -235,7 +235,7 @@ class Judge:
         self.history = history[history[TARGET] == 1][["person_id", "occurred_at"]]
 
     def features(self, event):
-        """把 API 課格式的事件，補成模型要的一列特徵。"""
+        """把平台格式的事件，補成模型要的一列特徵。"""
         t = pd.Timestamp(event["occurred_at"])
         pid = event["detail"]["person_id"]
         past = self.history[(self.history["person_id"] == pid) & (self.history["occurred_at"] < t)
@@ -263,7 +263,7 @@ def main():
     print(f"== {LINE}：定版判斷器 ==")
     print(f"門檻 HIGH {config['high']}、LOW {config['low']}；模型 {config['sha256_12']}（訓練到 {config['trained_until']} 前）")
     judge = Judge()
-    print("\n== 最後 2 週挑 8 筆新事件（API 課格式），交給 decide() ==")
+    print("\n== 最後 2 週挑 8 筆新事件（平台格式），交給 decide() ==")
     rows = []
     for line in (STORY / "data" / LINE / "new_events.jsonl").read_text(encoding="utf-8").splitlines():
         event = json.loads(line)

@@ -55,7 +55,7 @@ def pose_events():
 def main():
     profile = detector.PROFILE
     if POSE_EVENT not in profile["event_types"]:
-        # 平台只收設定檔裡有的事件類型（API 課 Workshop 1）。新事件要先加進設定檔，平台才收。
+        # 平台只收設定檔裡有的事件類型（平台的規則）。新事件要先加進設定檔，平台才收。
         profile["event_types"][POSE_EVENT] = {"severity": "high", "escalate_after_minutes": 10}
         print(f"設定檔加上新的事件類型：{POSE_EVENT}")
     url = detector.platform_url()

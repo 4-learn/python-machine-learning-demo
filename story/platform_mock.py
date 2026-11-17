@@ -1,12 +1,12 @@
-"""API 課平台的「替身」：只做 ML 課需要的那一小段（POST /events、GET /alerts）。
+"""告警平台的「替身」：只做這門課需要的那一小段（POST /events、GET /alerts）。
 
-規則和 API 課 v0.12 一樣：
+規則（一般告警平台的基本行為）：
   - 沒帶正確的 X-API-Key → 401
   - 事件類型不在設定檔 → 400
   - 信心值 ≥ 0.8 開 open、0.5–0.8 開 pending_review、< 0.5 只記錄
   - 事件的 detail 裡有 judge.decision 時，改聽判斷器的（第 23 節）
 
-真正的平台在 API 課（FastAPI＋PostgreSQL）。要改送到你自己的平台：
+要改送到你自己架的平台（例如 FastAPI 寫的 server）：
     PLATFORM_URL=http://localhost:8000 python detector.py
 """
 from __future__ import annotations
