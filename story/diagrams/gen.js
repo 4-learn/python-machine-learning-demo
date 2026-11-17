@@ -11,7 +11,7 @@ const VERS = ["00", ...Array.from({ length: 42 }, (_, i) => String(i + 1).padSta
 
 const TITLES = {
   "01": ["平台規則準不準", "pandas crosstab"],
-  "02": ["告警歷史變成 X 和 y", "pandas"],
+  "02": ["挑選特徵：哪些欄位模型可以看", "pandas"],
   "03": ["切出考卷", "train_test_split、GroupShuffleSplit"],
   "04": ["不用模型能拿幾分", "DummyClassifier"],
   "05": ["第一個模型", "KNeighborsClassifier"],
