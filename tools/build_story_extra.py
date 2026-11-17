@@ -25,14 +25,11 @@ from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 SEED = 20260125
-NTUNHS = Path("/home/yillkid/workspace/swarm/hives/4-learn/course-materials/ntunhs/demo/tools/build_data.py")
 
 
 def load_pose_module():
-    """骨架產生器：優先用 repo 內的副本（tools/pose_generator.py），沒有才去國北護課取。"""
-    local = ROOT / "tools" / "pose_generator.py"
-    path = local if local.exists() else NTUNHS
-    spec = importlib.util.spec_from_file_location("pose_gen", path)
+    """骨架產生器（tools/pose_generator.py）。"""
+    spec = importlib.util.spec_from_file_location("pose_gen", ROOT / "tools" / "pose_generator.py")
     m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
     return m
 

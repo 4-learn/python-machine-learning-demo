@@ -7,7 +7,7 @@ from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
 
 torch.manual_seed(0)
 torch.set_num_threads(4)
-PHOTO = "data/photo-site-rebar.jpg"              # AI 生成的擬真工地照片，不是真實人物
+PHOTO = "story/data/photos/photo-site-rebar.jpg"              # AI 生成的擬真工地照片，不是真實人物
 
 print("== 1. tensor 和 NumPy 陣列長得幾乎一樣 ==")
 a = np.array([[0.71, 4.3], [0.94, 11.4]])

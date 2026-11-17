@@ -2,7 +2,7 @@
 import numpy as np
 from PIL import Image
 
-PHOTO = "data/photo-site-rebar.jpg"              # AI 生成的擬真工地照片，不是真實人物
+PHOTO = "story/data/photos/photo-site-rebar.jpg"              # AI 生成的擬真工地照片，不是真實人物
 CROPS = "story/data/factory/crops"
 
 print("== 1. 一張照片＝一個 3 維陣列 ==")

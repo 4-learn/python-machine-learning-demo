@@ -1,32 +1,15 @@
-"""產生國北護課程的合成資料（固定 seed，可重跑、逐位元組相同）。
+"""骨架序列產生器（給 tools/build_story_extra.py 用）：受試者、攝影機、7 種活動，10 fps、每段 4 秒、COCO 17 點。
 
-    python tools/build_data.py
-
-產出（全部在 data/ 底下，MANIFEST.json 記 SHA-256）：
-- pose/poses.csv          主要照護機構：24 位受試者 × 3 支攝影機，每段 40 影格（10 fps）
-- pose/poses-site2.csv    第二間機構（攝影機更高、更暗）：上線後漂移用，只有部分標籤
-- care/residents.csv      30 位住民
-- care/wearable.jsonl     手環：心率、血氧、步數（UTC、不規則、掉值、重複）
-- care/bed_pressure.csv   床墊壓力（本地時間、每分鐘、單位混用）
-- care/nurse_log.csv      護理紀錄（手打、格式不一）
-- line/plc_a.csv          產線 PLC A：每秒溫度（°C）、振動 RMS
-- line/plc_b.csv          產線 PLC B：每 5 秒轉速、溫度（°F）
-- line/inspection.csv     每個工件的檢驗結果（ok／ng）
-
-全部是程式產生的合成資料，不含任何真實人物或病歷。
+不要直接執行；build_story_extra.py 會呼叫 build_pose()。全部是程式產生，不含真實人物。
 """
 from __future__ import annotations
 
-import hashlib
-import json
 import math
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data"
 
 KPTS = ["nose", "left_eye", "right_eye", "left_ear", "right_ear",
         "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
@@ -263,162 +246,3 @@ def build_pose(cameras, n_subjects, reps, prefix, seed, label_frac=1.0):
                         row[f"{name}_c"] = round(float(conf[k]), 3)
                     rows.append(row)
     return pd.DataFrame(rows)
-
-
-# ---------------------------------------------------------------- 照護多源資料
-
-def build_care(seed=7):
-    rng = np.random.default_rng(seed)
-    out = {}
-    surnames = list("陳林黃張李王吳劉蔡楊許鄭謝郭洪曾邱廖賴周")
-    given = ["淑芬", "美玲", "秀英", "建國", "志明", "麗華", "金水", "阿蘭", "明德", "春美",
-             "文雄", "玉珠", "國華", "素貞", "正雄"]
-    res = []
-    for i in range(1, 31):
-        name = surnames[int(rng.integers(len(surnames)))] + given[int(rng.integers(len(given)))]
-        res.append(dict(resident_id=f"R{i:03d}", name=name, age=int(rng.integers(68, 96)),
-                        room=f"{2 + (i - 1) // 10}{(i - 1) % 10 + 1:02d}",
-                        fall_risk=rng.choice(["低", "中", "高"], p=[0.4, 0.4, 0.2]),
-                        bed_sensor_unit="kPa" if i <= 20 else "mmHg"))
-    residents = pd.DataFrame(res)
-    out["residents"] = residents
-
-    start = pd.Timestamp("2026-01-05 20:00")  # 本地時間，夜班
-    nights = 7
-    wear, bed, nurse = [], [], []
-    for r in res:
-        rid = r["resident_id"]
-        risk = {"低": 0.15, "中": 0.35, "高": 0.6}[r["fall_risk"]]
-        for d in range(nights):
-            n0 = start + pd.Timedelta(days=d)
-            minutes = 12 * 60
-            exits = sorted(rng.choice(np.arange(60, minutes - 30), size=int(rng.poisson(risk * 3)), replace=False))
-            in_bed = np.ones(minutes, dtype=int)
-            hr = rng.normal(64, 3, minutes)
-            for e in exits:
-                dur = int(rng.integers(5, 25))
-                in_bed[e:e + dur] = 0
-                hr[max(0, e - 12):e] += np.linspace(0, rng.uniform(6, 14), min(12, e))  # 離床前心率上升
-                hr[e:e + dur] += rng.uniform(10, 20)
-                nurse.append(dict(time=n0 + pd.Timedelta(minutes=int(e + rng.integers(1, 6))), rid=rid,
-                                  kind="exit"))
-            if rng.random() < 0.06:
-                e = int(rng.integers(120, minutes - 60))
-                nurse.append(dict(time=n0 + pd.Timedelta(minutes=e), rid=rid, kind="fall"))
-            # 床墊：每分鐘一筆，壓力
-            unit = r["bed_sensor_unit"]
-            p = np.where(in_bed == 1, rng.normal(4.2, 0.3, minutes), rng.normal(0.2, 0.1, minutes))
-            if unit == "mmHg":
-                p = p * 7.50062
-            for m in range(0, minutes):
-                if rng.random() < 0.01:
-                    continue  # 掉資料
-                bed.append(dict(time=(n0 + pd.Timedelta(minutes=m)).strftime("%Y-%m-%d %H:%M:%S"),
-                                resident_id=rid, pressure=round(float(p[m]), 2), unit=unit))
-            # 手環：不規則間隔（約 2 分鐘），UTC，有 0 值、重複
-            t = 0.0
-            while t < minutes:
-                m = int(t)
-                ts = (n0 + pd.Timedelta(minutes=t) - pd.Timedelta(hours=8)).strftime("%Y-%m-%dT%H:%M:%SZ")
-                val = int(round(hr[m]))
-                if rng.random() < 0.02:
-                    val = 0
-                rec = dict(device=f"WB-{rid[1:]}", ts=ts, hr=val,
-                           spo2=int(np.clip(rng.normal(96, 1.5), 85, 100)),
-                           steps=int(rng.poisson(8)) if in_bed[m] == 0 else 0)
-                wear.append(rec)
-                if rng.random() < 0.03:
-                    wear.append(dict(rec))  # 重複上傳
-                t += float(rng.uniform(1.0, 3.0))
-    out["bed"] = pd.DataFrame(bed)
-    out["wear"] = wear
-    # 護理紀錄：手打、格式不一、名字有空白
-    name_of = residents.set_index("resident_id")["name"].to_dict()
-    nl = []
-    for n in nurse:
-        nm = name_of[n["rid"]]
-        if rng.random() < 0.2:
-            nm = nm[0] + " " + nm[1:]
-        fmt = rng.choice(["%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%m/%d %H:%M"], p=[0.6, 0.3, 0.1])
-        txt = {"exit": rng.choice(["夜間離床", "離床如廁", "下床走動", "離床"]),
-               "fall": rng.choice(["跌倒", "跌倒，已通報", "床邊跌坐"])}[n["kind"]]
-        nl.append(dict(time=n["time"].strftime(fmt), room=residents.set_index("resident_id").loc[n["rid"], "room"],
-                       name=nm, note=txt, nurse=rng.choice(["N01", "N02", "N03", "N04"])))
-    out["nurse"] = pd.DataFrame(nl).sort_values("time", kind="stable").reset_index(drop=True)
-    return out
-
-
-# ---------------------------------------------------------------- 產線多源資料
-
-def build_line(seed=11):
-    rng = np.random.default_rng(seed)
-    t0 = pd.Timestamp("2026-01-12 08:00:00")
-    secs = 4 * 3600
-    temp = 45 + np.cumsum(rng.normal(0, 0.03, secs))
-    vib = np.abs(rng.normal(1.0, 0.08, secs))
-    # 兩段異常：刀具磨耗 → 振動、溫度上升
-    for a, b in [(3600, 4500), (9800, 10900)]:
-        ramp = np.linspace(0, 1, b - a)
-        vib[a:b] += ramp * 0.9
-        temp[a:b] += ramp * 6
-    plc_a = pd.DataFrame(dict(time=[(t0 + pd.Timedelta(seconds=s)).strftime("%Y-%m-%d %H:%M:%S") for s in range(secs)],
-                              temp_c=np.round(temp, 2), vib_rms=np.round(vib, 3)))
-    plc_a = plc_a.drop(index=rng.choice(secs, 300, replace=False)).reset_index(drop=True)
-    idx = np.arange(0, secs, 5)
-    rpm = 1800 + rng.normal(0, 8, len(idx))
-    rpm[(idx >= 3600) & (idx < 4500)] -= np.linspace(0, 60, ((idx >= 3600) & (idx < 4500)).sum())
-    plc_b = pd.DataFrame(dict(ts=[int((t0 + pd.Timedelta(seconds=int(s))).timestamp() * 1000) for s in idx],
-                              spindle_rpm=np.round(rpm, 1),
-                              temp_f=np.round(temp[idx] * 9 / 5 + 32 + rng.normal(0, 0.3, len(idx)), 1)))
-    parts = []
-    s = 30
-    k = 0
-    while s < secs:
-        k += 1
-        risk = 0.02 + 0.6 * max(0, vib[s - 30:s].mean() - 1.15)
-        ng = rng.random() < min(risk, 0.9)
-        parts.append(dict(part_id=f"P{k:05d}", done_at=(t0 + pd.Timedelta(seconds=s)).strftime("%Y-%m-%d %H:%M:%S"),
-                          result="ng" if ng else "ok"))
-        s += int(rng.integers(35, 55))
-    return plc_a, plc_b, pd.DataFrame(parts)
-
-
-# ---------------------------------------------------------------- 寫檔
-
-def sha(p: Path) -> str:
-    return hashlib.sha256(p.read_bytes()).hexdigest()
-
-
-def main():
-    (DATA / "pose").mkdir(parents=True, exist_ok=True)
-    (DATA / "care").mkdir(parents=True, exist_ok=True)
-    (DATA / "line").mkdir(parents=True, exist_ok=True)
-    files = {}
-    pose = build_pose(CAMERAS, 24, 2, "S", seed=1)
-    pose.to_csv(DATA / "pose/poses.csv", index=False)
-    site2 = build_pose(SITE2_CAMERAS, 10, 2, "T", seed=2, label_frac=0.3)
-    site2.to_csv(DATA / "pose/poses-site2.csv", index=False)
-    care = build_care()
-    care["residents"].to_csv(DATA / "care/residents.csv", index=False)
-    care["bed"].to_csv(DATA / "care/bed_pressure.csv", index=False)
-    care["nurse"].to_csv(DATA / "care/nurse_log.csv", index=False)
-    with open(DATA / "care/wearable.jsonl", "w", encoding="utf-8") as f:
-        for rec in care["wear"]:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    a, b, parts = build_line()
-    a.to_csv(DATA / "line/plc_a.csv", index=False)
-    b.to_csv(DATA / "line/plc_b.csv", index=False)
-    parts.to_csv(DATA / "line/inspection.csv", index=False)
-    for p in sorted(DATA.rglob("*")):
-        if p.is_file() and p.suffix in (".csv", ".jsonl"):
-            files[str(p.relative_to(DATA))] = sha(p)
-    (DATA / "MANIFEST.json").write_text(json.dumps(dict(
-        generator="tools/build_data.py", synthetic=True, files=files), ensure_ascii=False, indent=2) + "\n")
-    print("poses", pose.shape, "seqs", pose.seq_id.nunique(), "site2", site2.shape)
-    print(pose.groupby("activity").seq_id.nunique().to_dict())
-    print("care bed", len(care["bed"]), "wear", len(care["wear"]), "nurse", len(care["nurse"]))
-    print("line a", len(a), "b", len(b), "parts", len(parts), "ng", (parts.result == "ng").sum())
-
-
-if __name__ == "__main__":
-    main()

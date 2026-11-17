@@ -1,6 +1,6 @@
 """產生 ML 課（2026 v2）兩條線的合成告警歷史。
 
-    python tools/build_story_data.py           # 重建 data/ 並寫 MANIFEST.json
+    python tools/build_story_data.py           # 重建 story/data/ 並寫 MANIFEST.json
     python tools/build_story_data.py --check   # 重建到暫存目錄比對 MANIFEST
 
 故事：API 課做出的告警平台已經試用 10 週。每一筆告警最後由值班的人處理成
