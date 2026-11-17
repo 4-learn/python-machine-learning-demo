@@ -25,9 +25,12 @@
 
 ## 環境
 
+Python 3.11 以上，CPU 即可，不需要顯示卡。
+
 ```bash
-python3.11 -m venv ~/.venvs/ml-course && source ~/.venvs/ml-course/bin/activate
-pip install scikit-learn==1.9.1 pandas==3.0.6 joblib
+python3 -m venv .venv
+source .venv/bin/activate          # Windows：.venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-影像段（第 16 節起）的安裝步驟會在該節說明。
+`requirements.txt` 已經指定從 PyTorch 官方的 **CPU 版**套件庫下載 `torch`、`torchvision`（第 17 節說明原因：預設版本含顯示卡套件，會多佔好幾 GB）。所有版本都已固定，和講義的實測輸出一致。

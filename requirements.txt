@@ -1,0 +1,25 @@
+# Python 機器學習（2026 v2）
+# Python 3.11 以上。建立虛擬環境後安裝：
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# PyTorch 從官方的 CPU 版套件庫下載（第 17 節）：預設版本含 NVIDIA 顯示卡套件，會多佔好幾 GB。
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# 01–15 節：資料處理與判斷器
+pandas==3.0.6
+numpy==2.4.6
+scikit-learn==1.9.1
+scipy==1.17.1
+joblib==1.6.0
+
+# 16–24 節：影像、PyTorch、YOLO、送事件
+pillow==12.3.0
+torch==2.14.1
+torchvision==0.29.1
+ultralytics==8.4.173
+requests==2.34.2
+
+# 25–42 節（AI 新秀）：OpenCV（ultralytics 也會用到）、pytest
+opencv-python==5.0.0.93
+pytest==9.1.1
