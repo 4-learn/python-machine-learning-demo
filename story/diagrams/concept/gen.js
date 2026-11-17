@@ -57,10 +57,10 @@ function flow() {
   b += arrow([[420, 187], [420, 254], [450, 254]]);
   // 同一把尺
   b += `<rect x="712" y="84" width="236" height="200" rx="10" fill="${C.key.fill}" stroke="${C.key.stroke}" stroke-width="1.8"/>`;
-  b += text(830, 112, "③ 用同一把尺量", { size: 16, bold: true, fill: C.key.text });
+  b += text(732, 112, "③ 用同一把尺量", { size: 16, bold: true, fill: C.key.text, anchor: "start" });
   ["同一種切法（不偷看考卷）", "同一個指標（precision／recall）", "同一份 valid、test 只開一次"].forEach((s, i) => (b += text(732, 148 + i * 26, "· " + s, { size: 13, fill: C.ink, anchor: "start" })));
-  b += text(830, 236, "多半用 scikit-learn 的工具", { size: 12.5, fill: C.sub });
-  b += text(830, 258, "（偵測的 IoU、mAP 用 ultralytics）", { size: 12, fill: C.sub });
+  b += text(732, 236, "多半用 scikit-learn 的工具", { size: 12.5, fill: C.sub, anchor: "start" });
+  b += text(732, 258, "（偵測的 IoU、mAP 用 ultralytics）", { size: 12, fill: C.sub, anchor: "start" });
   [117, 187, 254].forEach((y) => (b += arrow([[660, y], [712, y]], { color: C.key.stroke, mk: "k" })));
   // 選 → 上線
   b += arrow([[948, Y + H / 2 + 32], [990, Y + H / 2 + 32]], { color: C.key.stroke, mk: "k" });
