@@ -19,38 +19,28 @@ toy["last_hour"] = toy["count"].shift(1)
 toy["next_hour"] = toy["count"].shift(-1)
 print(toy.to_string())
 
-print("\n== 3. mean_absolute_error：平均差幾筆 ==")
-truth, guess = [50, 55, 52], [48, 60, 52]
-mae = mean_absolute_error(truth, guess)
-print(f"實際 {truth}、預測 {guess} → MAE {mae:.3f}")
-
-print("\n== 4. LinearRegression：fit 之後的 coef_ 和 intercept_ ==")
+print("\n== 3. LinearRegression：學到一條「乘法加法」的規則 ==")
 s = pd.read_csv("story/data/factory/stream/detections.csv")
 s["ts"] = pd.to_datetime(s["ts"])
 h = s.drop_duplicates().set_index("ts")["confidence"].resample("1h").count().rename("count").to_frame()
 h["last_hour"] = h["count"].shift(1)
+h["same_hour_yesterday"] = h["count"].shift(24)
 h = h.dropna()
 train, test = h[h.index < "2026-01-09"], h[h.index >= "2026-01-09"]
 model = LinearRegression().fit(train[["last_hour"]], train["count"])
-print(f"每小時一列：學 {len(train)} 小時（01-05～01-08）、考 {len(test)} 小時（01-09 起）")
+print(f"每小時一列：學 {len(train)} 小時（01-06～01-08）、考 {len(test)} 小時（01-09 起）")
 print(f"coef_ = {model.coef_.round(3)}、intercept_ = {model.intercept_:.3f}")
 x = 50
 print(f"上一小時 {x} 筆 → predict {model.predict(pd.DataFrame({'last_hour': [x]}))[0]:.3f}"
       f"；手算 {model.coef_[0]:.3f} × {x} + {model.intercept_:.3f} = {model.coef_[0] * x + model.intercept_:.3f}")
 
-print("\n== 5. 和兩條 baseline 比（test，MAE 越小越好）==")
-rows = [("平均：一律猜訓練期每小時的平均", [train["count"].mean()] * len(test)),
-        ("上一小時：直接照抄上一小時", test["last_hour"]),
-        ("LinearRegression：用上一小時", model.predict(test[["last_hour"]]))]
+print("\n== 4. mean_absolute_error：和兩條 baseline 比（test，越小越好）==")
+cols = ["last_hour", "same_hour_yesterday"]
+model2 = LinearRegression().fit(train[cols], train["count"])
+rows = [("一律猜訓練期的平均", [train["count"].mean()] * len(test)),
+        ("照抄上一小時", test["last_hour"]),
+        ("LinearRegression：上一小時", model.predict(test[["last_hour"]])),
+        ("LinearRegression：上一小時＋昨天同一小時", model2.predict(test[cols]))]
 for name, pred in rows:
     print(f"MAE {mean_absolute_error(test['count'], pred):6.3f}  {name}")
-
-print("\n== 6. 多一個落後特徵：昨天同一小時（shift(24)）==")
-h2 = h.copy()
-h2["same_hour_yesterday"] = h2["count"].shift(24)
-h2 = h2.dropna()
-cols = ["last_hour", "same_hour_yesterday"]
-train2, test2 = h2[h2.index < "2026-01-09"], h2[h2.index >= "2026-01-09"]
-model2 = LinearRegression().fit(train2[cols], train2["count"])
-print("係數：", ", ".join(f"{c} {w:+.3f}" for c, w in zip(cols, model2.coef_)), f"；intercept {model2.intercept_:+.3f}")
-print(f"MAE {mean_absolute_error(test2['count'], model2.predict(test2[cols])):.3f}（學 {len(train2)} 小時：前 24 小時沒有「昨天」，被 dropna 拿掉）")
+print("第二個模型的係數：", ", ".join(f"{c} {w:+.3f}" for c, w in zip(cols, model2.coef_)))

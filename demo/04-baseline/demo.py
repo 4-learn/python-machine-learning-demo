@@ -8,7 +8,6 @@ X = pd.DataFrame({"confidence": [0.95, 0.83, 0.81, 0.72, 0.66, 0.55, 0.49, 0.41,
 y = pd.Series([1, 0, 1, 1, 0, 0, 1, 0, 0, 0])
 dummy = DummyClassifier(strategy="most_frequent")
 dummy.fit(X, y)
-print("fit 之後記住的：classes_ =", dummy.classes_.tolist(), "，class_prior_ =", dummy.class_prior_.tolist())
 print("predict：", dummy.predict(X).tolist())
 
 print("\n== 2. 三個分數 ==")
@@ -24,14 +23,8 @@ fit = df[df["occurred_at"] < "2025-12-15"]
 valid = df[(df["occurred_at"] >= "2025-12-15") & (df["occurred_at"] < "2025-12-29")]
 X_fit, y_fit = fit[["confidence"]], fit["label"]
 X_valid, y_valid = valid[["confidence"]], valid["label"]
-
-rows = []
-for strategy in ["most_frequent", "stratified"]:
-    model = DummyClassifier(strategy=strategy, random_state=0).fit(X_fit, y_fit)
-    pred = model.predict(X_valid)
-    rows.append({"strategy": strategy, "叫人次數": int(pred.sum()),
-                 "accuracy": accuracy_score(y_valid, pred),
-                 "precision": precision_score(y_valid, pred, zero_division=0),
-                 "recall": recall_score(y_valid, pred)})
+model = DummyClassifier(strategy="most_frequent").fit(X_fit, y_fit)
+pred = model.predict(X_valid)
 print(f"valid {len(valid)} 筆，真的要叫人 {y_valid.sum()} 筆（{y_valid.mean():.3f}）")
-print(pd.DataFrame(rows).round(3).to_string(index=False))
+print(f"多數類：叫人 {pred.sum()} 次  accuracy {accuracy_score(y_valid, pred):.3f}  "
+      f"precision {precision_score(y_valid, pred, zero_division=0):.3f}  recall {recall_score(y_valid, pred):.3f}")

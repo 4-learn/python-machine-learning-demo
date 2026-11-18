@@ -47,27 +47,8 @@ for depth in [1, 2, 3, 4, 6, 8, None]:
                  "valid_acc": round(accuracy_score(y_valid, t.predict(valid[NUMERIC])), 3)})
 print(pd.DataFrame(rows).to_string(index=False, float_format="{:.3f}".format))
 
-print("\n== 4. 樹不需要縮放：scale=True 和 scale=False ==")
+print("\n== 4. 一棵樹 vs 一群樹：背答案的程度 ==")
 X_fit, X_valid = fit[NUMERIC + CATEGORICAL], valid[NUMERIC + CATEGORICAL]
-preds = {}
-for scale in [True, False]:
-    m = make_pipeline(make_preprocessor(scale=scale),
-                      DecisionTreeClassifier(max_depth=2, random_state=0)).fit(X_fit, y_fit)
-    names = list(m[0].get_feature_names_out())
-    first = export_text(m[-1], feature_names=names, decimals=3).splitlines()[0]
-    preds[scale] = m.predict(X_valid)
-    print(f"scale={scale!s:<5} 第一刀：{first.strip('|- ')}")
-print("兩種預測完全一樣：", bool((preds[True] == preds[False]).all()))
-
-print("\n== 5. n_estimators：隨機森林要幾棵樹 ==")
-rows = []
-for n in [1, 5, 20, 100, 300]:
-    rf = make_pipeline(make_preprocessor(scale=False),
-                       RandomForestClassifier(n_estimators=n, random_state=0, n_jobs=1)).fit(X_fit, y_fit)
-    rows.append({"n_estimators": n, **scores("", rf.predict(X_valid))})
-print(pd.DataFrame(rows).drop(columns="model").to_string(index=False, float_format="{:.3f}".format))
-
-print("\n== 6. 一棵樹 vs 一群樹：背答案的程度 ==")
 models = {"決策樹（不限深度）": DecisionTreeClassifier(random_state=0),
           "隨機森林 300 棵": RandomForestClassifier(n_estimators=300, random_state=0, n_jobs=1),
           "梯度提升": HistGradientBoostingClassifier(random_state=0)}

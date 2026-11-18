@@ -1,4 +1,4 @@
-"""27｜EZCam：requests.get 拿到 JPEG bytes → np.frombuffer → cv2.imdecode → 陣列；Mock 模式；被叫才拍、不是串流。"""
+"""27｜EZCam：requests.get 拿到 JPEG bytes → np.frombuffer → cv2.imdecode → 陣列；壞掉的回應；capture() 與 Mock 模式、被叫才拍。"""
 import os
 import threading
 import time
@@ -7,7 +7,6 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import pandas as pd
 import requests
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,7 +67,7 @@ try:
 except requests.exceptions.HTTPError as e:
     print(f"raise_for_status() → HTTPError: {e.response.status_code}")
 
-print("\n== 4. Mock 模式：沒設 EZCAM_URL 就讀本機檔案 ==")
+print("\n== 4. capture()：沒設 EZCAM_URL 就讀本機檔案；被叫才拍 ==")
 
 
 def capture(url):
@@ -88,7 +87,6 @@ print(f"os.getenv('EZCAM_URL') = {os.getenv('EZCAM_URL')}")
 print(f"Mock 模式 capture(None)  → {capture(None).shape}")
 print(f"假 EZCam capture(URL)    → {capture(URL).shape}")
 
-print(f"\n== 5. 被叫才拍：一張要等 {SHOT_SECONDS} 秒（真的 EZCam 約 3 秒）==")
 t0 = time.perf_counter()
 for _ in range(3):
     capture(URL)
@@ -96,23 +94,3 @@ elapsed = time.perf_counter() - t0
 print(f"連拍 3 張，至少要 {3 * SHOT_SECONDS:.1f} 秒：{elapsed >= 3 * SHOT_SECONDS}")
 server.shutdown()
 
-print("\n== 6. 約 3 秒一張 vs 每秒 10 格：跌倒的那一刻拍得到嗎？ ==")
-poses = pd.read_csv(ROOT / "story" / "data" / "care" / "pose" / "poses.csv",
-                    usecols=["seq_id", "frame", "posture", "is_fall_seq", "fall_frame"])
-falls = poses[poses["is_fall_seq"] == 1]
-lying = falls.groupby("seq_id")["posture"].last().eq("lying")
-seq = falls[falls["seq_id"] == lying[lying].index[0]]               # 第一段「倒完躺在地上」的
-print(f"{seq['seq_id'].iloc[0]}，開始倒在第 {seq['fall_frame'].iloc[0]} 格")
-NAME = {"standing": "站", "sitting": "坐", "lying": "躺"}
-print("10 格／秒：", "".join(NAME[p] for p in seq["posture"]))
-print("3 秒一張：", "".join(NAME[p] for p in seq["posture"].iloc[::30]),
-      "（第 0、3 秒）")
-caught = total = 0
-for _, s in falls.groupby("seq_id"):
-    start = int(s["fall_frame"].iloc[0])
-    end = int(s.loc[s["posture"] != "standing", "frame"].min())   # 開始倒 → 姿勢變了
-    for offset in range(30):                                        # 第一張剛好在第幾格拍
-        shots = range(offset, 40, 30)
-        caught += any(start <= f < end for f in shots)
-        total += 1
-print(f"{falls['seq_id'].nunique()} 段跌倒 × 30 種起拍時間 = {total} 種情形；拍到「正在倒」的 {caught / total:.3f}")

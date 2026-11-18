@@ -52,13 +52,7 @@ photos["判斷器"] = post_all(with_judge)
 print(json.dumps(with_judge[1], ensure_ascii=False))
 print(photos[["image", "location", "duration_seconds", "平台規則", "判斷器"]].to_string(index=False))
 
-print("\n== 3. {**e} 只複製外層：detail 還是同一個 ==")
-shallow = {**events[0]}
-shallow["detail"]["judge"] = judged[0]
-print(f"改了複製品的 detail，原本的事件也有 judge：{'judge' in events[0]['detail']}")
-del events[0]["detail"]["judge"]
-
-print("\n== 4. 和事後答案比 ==")
+print("\n== 3. 和事後答案比 ==")
 
 
 def compare(status, should):
@@ -71,6 +65,6 @@ def compare(status, should):
 print(pd.DataFrame([{"方法": "平台規則", **compare(photos["平台規則"], photos["should_alert"])},
                     {"方法": "偵測器＋判斷器", **compare(photos["判斷器"], photos["should_alert"])}]).to_string(index=False))
 
-print("\n== 5. 判斷器改變了哪些決定 ==")
+print("\n== 4. 判斷器改變了哪些決定 ==")
 changed = photos[photos["平台規則"] != photos["判斷器"]]
 print(changed[["image", "location", "duration_seconds", "平台規則", "判斷器", "should_alert"]].to_string(index=False))

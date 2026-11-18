@@ -31,9 +31,8 @@ model = make_pipeline(
                        ("cat", OneHotEncoder(handle_unknown="ignore"), ["location"])]),
     RandomForestClassifier(n_estimators=200, random_state=0)).fit(train[FEATURES], train["label"])
 X_valid, y_valid = valid[FEATURES], valid["label"]
-print(f"== 0. 資料：train {len(train)} 筆、valid {len(valid)} 筆 ==")
 
-print("\n== 1. 打亂一欄，分數掉多少（手動做一次）==")
+print("== 1. 打亂一欄，分數掉多少（手動做一次）==")
 base = average_precision_score(y_valid, model.predict_proba(X_valid)[:, 1])
 print(f"原本的 average precision：{base:.3f}")
 for col in ["duration_seconds", "light_lux"]:

@@ -1,4 +1,4 @@
-"""21｜IoU 與偵測門檻：手寫 iou、用 ultralytics 的 box_iou 對答案，再數出 TP／FP／FN、在 val 上掃門檻。"""
+"""21｜IoU 與偵測門檻：手寫 iou，數出 TP／FP／FN，再在 val 上掃門檻。"""
 import os
 
 os.environ.setdefault("YOLO_OFFLINE", "1")  # 不上網檢查更新
@@ -6,9 +6,7 @@ os.environ.setdefault("YOLO_OFFLINE", "1")  # 不上網檢查更新
 from pathlib import Path
 
 import pandas as pd
-import torch
 from ultralytics import YOLO
-from ultralytics.utils.metrics import box_iou
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENES = ROOT / "story" / "data" / "factory" / "scenes"
@@ -29,39 +27,29 @@ for dx in [0, 5, 10, 15, 30]:
     print(f"右移 {dx:>2} 像素：IoU {iou(truth, [100 + dx, 100, 130 + dx, 130]):.3f}")
 print(f"大小差一倍（30×30 和 30×60）：IoU {iou(truth, [100, 100, 130, 160]):.3f}")
 
-print("\n== 2. ultralytics 的 box_iou：一次算一整張表 ==")
-preds = [[100, 100, 130, 130], [105, 100, 135, 130], [200, 200, 230, 230]]
-truths = [[100, 100, 130, 130], [110, 100, 140, 130]]
-table = box_iou(torch.tensor(preds, dtype=torch.float32), torch.tensor(truths, dtype=torch.float32))
-print(f"輸入 {len(preds)} 個預測框、{len(truths)} 個標註框 → 形狀 {tuple(table.shape)}")
-print(pd.DataFrame(table.numpy().round(3), index=["預測0", "預測1", "預測2"], columns=["標註0", "標註1"]).to_string())
-hand = torch.tensor([[iou(p, t) for t in truths] for p in preds])
-print(f"和手寫的 iou 最多差 {float((hand - table).abs().max()):.3f}")
-
 
 def match(pred, truth, iou_min=0.5):
     """預測框依信心值由高到低，各自找 IoU 最大、還沒被配過的標註框。回傳每個預測框的結果與 FN 數。"""
     pred = sorted(pred, key=lambda p: -p[0])
     used, rows = set(), []
-    if pred and truth:
-        table = box_iou(torch.tensor([p[1] for p in pred]), torch.tensor(truth))
-    for i, (score, _) in enumerate(pred):
+    for score, box in pred:
+        ious = [iou(box, t) for t in truth]
         best, best_j = 0.0, None
-        for j in range(len(truth)):
-            if j not in used and table[i, j] > best:
-                best, best_j = float(table[i, j]), j
+        for j, v in enumerate(ious):
+            if j not in used and v > best:
+                best, best_j = v, j
         if best >= iou_min:
             used.add(best_j)          # TP；沒配上的就是 FP
             rows.append({"conf": score, "最重疊": f"標註{best_j}", "IoU": round(best, 3), "結果": "TP"})
         else:
-            j = int(table[i].argmax()) if truth else None
-            top = float(table[i, j]) if truth else 0.0
+            top = max(ious, default=0.0)
             why = "FP（重複框）" if top >= iou_min else "FP（位置不對）"
-            rows.append({"conf": score, "最重疊": f"標註{j}" if top > 0 else "-", "IoU": round(top, 3), "結果": why})
+            rows.append({"conf": score, "最重疊": f"標註{ious.index(top)}" if top > 0 else "-",
+                         "IoU": round(top, 3), "結果": why})
     return rows, len(truth) - len(used)
 
 
-print("\n== 3. 對齊規則：IoU >= 0.5，一個標註框只配一次 ==")
+print("\n== 2. 對齊規則：IoU >= 0.5，一個標註框只配一次 ==")
 truth = [[100.0, 100.0, 130.0, 130.0], [200.0, 100.0, 230.0, 130.0], [300.0, 100.0, 330.0, 130.0]]
 pred = [(0.95, [101.0, 101.0, 131.0, 131.0]),   # 對準標註0
         (0.60, [103.0, 99.0, 133.0, 129.0]),    # 又框了一次標註0
@@ -73,7 +61,7 @@ tp = sum(r["結果"] == "TP" for r in rows)
 print(f"TP {tp}、FP {len(rows) - tp}、FN {fn}（標註1、標註2 沒被配到）")
 print(f"precision {tp / len(rows):.3f}、recall {tp / len(truth):.3f}")
 
-print("\n== 4. 工廠線 val 60 張：先用 conf=0.01 全部收下 ==")
+print("\n== 3. 工廠線 val 60 張：先用 conf=0.01 全部收下，再掃門檻 ==")
 model = YOLO(str(ROOT / "models" / "factory-yolo11n.pt"))
 pred_by_image, truth_by_image = {}, {}
 for r in model.predict([str(p) for p in sorted((SCENES / "images" / "val").glob("*.jpg"))],
@@ -88,8 +76,6 @@ for r in model.predict([str(p) for p in sorted((SCENES / "images" / "val").glob(
             truth_by_image[name].append([(cx - w / 2) * 320, (cy - h / 2) * 320, (cx + w / 2) * 320, (cy + h / 2) * 320])
 print(f"head 標註 {sum(map(len, truth_by_image.values()))} 個；"
       f"head 預測框 {sum(map(len, pred_by_image.values()))} 個（conf >= 0.01）")
-
-print("\n== 5. 在 val 上掃門檻 ==")
 sweep = []
 for conf in [0.95, 0.9, 0.5, 0.05, 0.02, 0.01]:
     tp = fp = fn = 0

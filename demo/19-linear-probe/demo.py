@@ -1,5 +1,4 @@
 """19｜scikit-learn LogisticRegression：linear probe。預訓練網路負責把小圖變成數字，sklearn 的 Pipeline 負責學判斷。"""
-import time
 from pathlib import Path
 
 import joblib
@@ -31,13 +30,9 @@ with torch.no_grad():
                    for i in range(0, len(index), 32)]).numpy()
 y = (index["label"] == "alert").astype(int).to_numpy()
 print(f"x：{type(x).__name__} {x.shape}，y：{y.shape}，alert 占 {y.mean():.3f}")
-print(f"前 5 欄的平均：  {x[:, :5].mean(0).astype(float).round(3).tolist()}")
-print(f"前 5 欄的標準差：{x[:, :5].std(0).astype(float).round(3).tolist()}")
-
-print("\n== 2. 依攝影機切：夜間 camera_04 當 test ==")
 part = np.select([index["camera"] == "camera_04", index["camera"] == "camera_03"], ["test", "valid"], "train")
-print(pd.crosstab(index["camera"], pd.Series(part, name="分到")).to_string())
 tr, va, te = part == "train", part == "valid", part == "test"
+print(f"train {tr.sum()} 張（camera_01、02）、valid {va.sum()} 張（camera_03）、test {te.sum()} 張（夜間 camera_04）")
 
 
 def report(model, mask):
@@ -47,41 +42,21 @@ def report(model, mask):
             "recall": round(recall_score(y[mask], pred), 3)}
 
 
-print("\n== 3. Pipeline(StandardScaler, LogisticRegression) vs KNN（k=1）==")
-t0 = time.perf_counter()
+print("\n== 2. Pipeline(StandardScaler, LogisticRegression) vs KNN（k=1）==")
 probe = make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000)).fit(x[tr], y[tr])
-seconds = time.perf_counter() - t0
 knn = KNeighborsClassifier(n_neighbors=1).fit(x[tr], y[tr])
 rows = [{"模型": name, "資料": s, **report(m, mask)}
         for name, m in [("KNN（k=1）", knn), ("邏輯迴歸", probe)] for s, mask in [("valid", va), ("test", te)]]
 print(pd.DataFrame(rows).to_string(index=False))
-print(f"邏輯迴歸 fit {tr.sum()} 張：{'不到 1 秒' if seconds < 1 else '超過 1 秒'}")
 
-print("\n== 4. 邏輯迴歸就是「一層線性＋壓成機率」==")
-lr = probe[-1]
-z = probe[0].transform(x[te]) @ lr.coef_[0] + lr.intercept_[0]   # 特徵 × 權重，加總，加偏差
-by_hand = 1 / (1 + np.exp(-z))                                   # 壓成 0～1 的機率
-same = np.allclose(by_hand, probe.predict_proba(x[te])[:, 1])
-print(f"coef_ {lr.coef_.shape}、intercept_ {lr.intercept_.shape}：共 {lr.coef_.size + lr.intercept_.size} 個參數")
-print(f"自己算 1 / (1 + exp(-(x·w + b))) 和 predict_proba 一樣：{same}")
-
-print("\n== 5. predict_proba：夜間攝影機上，邏輯迴歸叫錯的那幾張 ==")
+print("\n== 3. predict_proba：夜間攝影機上，邏輯迴歸叫錯的那幾張 ==")
 night = index[te].assign(alert_機率=probe.predict_proba(x[te])[:, 1].round(3), 預測=probe.predict(x[te]))
 wrong = night[night["預測"] != (night["label"] == "alert")]
 print(wrong[["file", "kind", "label", "alert_機率"]].sort_values("alert_機率").to_string(index=False))
 false_alarm = int((wrong["label"] == "ok").sum())
 print(f"夜間 {te.sum()} 張錯 {len(wrong)} 張：誤報（ok 說成 alert）{false_alarm} 張、漏報 {len(wrong) - false_alarm} 張")
 
-print("\n== 6. 隨機切 vs 依攝影機切（一樣 200 張學、100 張考）==")
-order = np.random.default_rng(0).permutation(len(index))
-rnd_tr, rnd_te = np.isin(np.arange(len(index)), order[:200]), np.isin(np.arange(len(index)), order[300:])
-rows = []
-for name, a, b in [("隨機切（4 支攝影機混在一起）", rnd_tr, rnd_te), ("依攝影機切（test＝夜間 camera_04）", tr, te)]:
-    m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000)).fit(x[a], y[a])
-    rows.append({"切法": name, "test 張數": int(b.sum()), **report(m, b)})
-print(pd.DataFrame(rows).to_string(index=False))
-
-print("\n== 7. joblib：骨幹名稱和 Pipeline 存在一起 ==")
+print("\n== 4. joblib：骨幹名稱和 Pipeline 存在一起 ==")
 joblib.dump({"backbone": BACKBONE, "probe": probe}, OUT / "probe.joblib")
 saved = joblib.load(OUT / "probe.joblib")
 same = (saved["probe"].predict(x[te]) == probe.predict(x[te])).all()

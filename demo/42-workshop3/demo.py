@@ -39,23 +39,22 @@ def send_all(pairs):
 
 
 url = platform_mock.start(profile)
-print("== 1. 設定檔現在收哪些事件類型 ==")
-print(list(profile["event_types"]))
-print("\n== 2. 三種事件送進同一個平台 ==")
+print("== 1. 三種事件送進同一個平台 ==")
+print("設定檔收的事件類型：", list(profile["event_types"]))
 print(send_all([("ROI", roi_event), ("骨架", pose_event), ("YOLO", yolo_event)]))
 
-print("\n== 3. 新事件類型先加進設定檔，再送一次 ==")
+print("\n== 2. 新事件類型先加進設定檔，再送一次 ==")
 profile["event_types"]["unsafe_lifting"] = {"severity": "high", "escalate_after_minutes": 10}
-print(list(profile["event_types"]))
+print("設定檔收的事件類型：", list(profile["event_types"]))
 print(send_all([("骨架", pose_event)]))
 
-print("\n== 4. 骨架事件只送分數與特徵，不送畫面 ==")
+print("\n== 3. 骨架事件只送分數與特徵，不送畫面 ==")
 photo = (ROOT / "story" / "data" / "photos" / "factory-lifting.jpg").read_bytes()
 with_photo = {**pose_event, "detail": {**pose_event["detail"], "image_base64": base64.b64encode(photo).decode()}}
 print(f"只送特徵：{len(json.dumps(pose_event).encode()):>7} bytes")
 print(f"附上畫面：{len(json.dumps(with_photo).encode()):>7} bytes")
 print("detail：", json.dumps(pose_event["detail"], ensure_ascii=False))
 
-print("\n== 5. 平台上的告警：依事件類型看 ==")
+print("\n== 4. 平台上的告警：依事件類型看 ==")
 alerts = pd.DataFrame(requests.get(f"{url}/alerts", timeout=5).json())
 print(alerts[["id", "event_type", "location", "status"]].to_string(index=False))

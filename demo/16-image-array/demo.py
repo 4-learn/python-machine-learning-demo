@@ -10,9 +10,6 @@ img = Image.open("story/data/photos/photo-site-rebar.jpg")
 arr = np.asarray(img)
 print(img.width, img.height, img.mode)
 print(arr.shape, arr.dtype, arr.min(), arr.max())
-print(f"總共 {arr.size:,} 個數字")
-
-print("\n== 2. 一個像素＝三個 0–255 的整數（R, G, B）==")
 # (說明, x, y)：教師在照片上量的位置
 POINTS = [("黃色安全帽", 362, 268), ("白色安全帽", 698, 318),
           ("沒戴帽子的頭髮", 560, 262), ("水泥地面", 470, 535)]
@@ -20,53 +17,34 @@ for name, x, y in POINTS:
     r, g, b = arr[y, x]
     print(f"{name:<8} arr[{y}, {x}] = ({r:3d}, {g:3d}, {b:3d})")
 
-print("\n== 3. 先 y 後 x：切片就是裁切 ==")
+print("\n== 2. 先 y 後 x：切片就是裁切 ==")
 x1, y1, x2, y2 = 315, 240, 410, 320
 patch = arr[y1:y2, x1:x2]
 print(f"arr[{y1}:{y2}, {x1}:{x2}] → shape {patch.shape}")
 print(f"和 img.crop(({x1}, {y1}, {x2}, {y2})) 一樣嗎？",
       np.array_equal(patch, np.asarray(img.crop((x1, y1, x2, y2)))))
 
-print("\n== 4. 灰階與亮度：白天和夜間的小圖 ==")
+print("\n== 3. 灰階：把「比較暗」變成數字 ==")
 for name in ["factory/crops/ok/camera_01_001.jpg", "factory/crops/ok/camera_04_002.jpg",
              "care/crops/ok/camera_11_000.jpg", "care/crops/ok/camera_14_002.jpg"]:
-    path = f"story/data/{name}"
-    gray = np.asarray(Image.open(path).convert("L"))
-    print(f"{name:<35} 彩色 {np.asarray(Image.open(path)).shape} → 灰階 {gray.shape}，"
-          f"平均亮度 {gray.mean():6.1f}，暗像素（<50）占 {(gray < 50).mean():.3f}")
+    gray = np.asarray(Image.open(f"story/data/{name}").convert("L"))
+    print(f"{name:<35} 灰階 {gray.shape}，平均亮度 {gray.mean():6.1f}")
 
-print("\n== 5. uint8 的陷阱：250 + 10 不是 260 ==")
+print("\n== 4. 變成模型要的 (1, 3, 224, 224) ==")
 p = np.array([250, 128, 10], dtype=np.uint8)
-print(p + 10)
-print(p.astype(np.int16) + 10)
-print(p.astype(np.float32) / 255)
-
-print("\n== 6. 縮放：resize 寫 (寬, 高)，shape 是 (高, 寬) ==")
-wide = img.resize((224, 112))
-scale = 256 / min(img.size)
-short = img.resize((round(img.width * scale), round(img.height * scale)))
-left, top = (short.width - 224) // 2, (short.height - 224) // 2
-center = short.crop((left, top, left + 224, top + 224))
-print(f"img.resize((224, 112)) → {wide.width}×{wide.height}，陣列 shape {np.asarray(wide).shape}")
-square = img.resize((224, 224))
-print(f"直接壓成 224×224：寬高比 {img.width / img.height:.2f} → {square.width / square.height:.2f}（被壓扁）")
-print(f"短邊縮到 256 → {short.width}×{short.height}，再從中間裁 → {center.width}×{center.height}"
-      f"（左右共裁掉 {short.width - 224} 像素、上下共 {short.height - 224} 像素）")
-
-print("\n== 7. 走到模型要的樣子：(1, 3, 224, 224) 的 float32 ==")
-crops = [np.asarray(Image.open(f"{CROPS}/{n}").convert("RGB").resize((224, 224)))
-         for n in ["ok/camera_01_001.jpg", "alert/camera_01_000.jpg", "ok/camera_04_002.jpg"]]
+print("uint8 直接 + 10：", p + 10)
+print("先轉 float32 再 / 255：", p.astype(np.float32) / 255)
 # ImageNet 照片每個顏色的平均和標準差
 MEAN = np.array([0.485, 0.456, 0.406])
 STD = np.array([0.229, 0.224, 0.225])
-x01 = np.asarray(center).astype(np.float32) / 255
+small = Image.open(f"{CROPS}/ok/camera_01_001.jpg").convert("RGB").resize((224, 224))
+x01 = np.asarray(small).astype(np.float32) / 255
 xn = ((x01 - MEAN) / STD).astype(np.float32)
 chw = xn.transpose(2, 0, 1)
 one = chw[np.newaxis]
-batch = np.stack(crops)
-print(f"/255 後範圍 {x01.min():.3f}～{x01.max():.3f}；標準化後 {xn.min():.3f}～{xn.max():.3f}")
-print(f"transpose(2, 0, 1)：{xn.shape} → {chw.shape}；前面加一維 → {one.shape}，dtype {one.dtype}")
-wrong = xn.reshape(3, 224, 224)
-print(f"reshape(3, 224, 224) 的 shape 也是 {wrong.shape}，內容和 transpose 一樣嗎？",
-      np.array_equal(wrong, chw))
-print(f"3 張小圖 np.stack → {batch.shape}；transpose(0, 3, 1, 2) → {batch.transpose(0, 3, 1, 2).shape}")
+print(f"縮成 224×224 {x01.shape}；/255 後 {x01.min():.3f}～{x01.max():.3f}；標準化後 {xn.min():.3f}～{xn.max():.3f}")
+print(f"transpose(2, 0, 1) → {chw.shape}；前面加一維 → {one.shape}，dtype {one.dtype}")
+crops = [np.asarray(Image.open(f"{CROPS}/{n}").convert("RGB").resize((224, 224)))
+         for n in ["ok/camera_01_001.jpg", "alert/camera_01_000.jpg", "ok/camera_04_002.jpg"]]
+batch = np.stack(crops).transpose(0, 3, 1, 2)
+print(f"3 張小圖 np.stack 再 transpose(0, 3, 1, 2) → {batch.shape}")

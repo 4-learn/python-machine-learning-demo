@@ -49,17 +49,14 @@ worst = good[::-1]                                         # 真的全排在最�
 for name, score in [("全排最前", good), ("夾在中間", mixed), ("全排最後", worst)]:
     print(f"{name}：AP = {average_precision_score(truth, score):.3f}")
 
-print("\n== 3. cross_validate：5 折，一次算三種分數 ==")
+print("\n== 3. cross_validate：考 5 次，報平均 ± 標準差 ==")
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
 s = cross_validate(logreg(), X, y, cv=cv, scoring=["precision", "recall", "average_precision"])
-print("s 的 key：", list(s))
 print(pd.DataFrame({k: v for k, v in s.items() if k.startswith("test_")}).to_string(float_format="{:.3f}".format))
-
-print("\n== 4. 平均 ± 標準差 ==")
 for key in ["test_precision", "test_recall", "test_average_precision"]:
     print(f"{key:<24}{s[key].mean():.3f} ± {s[key].std():.3f}")
 
-print("\n== 5. groups=incident_id：同一件事不能拆到兩邊 ==")
+print("\n== 4. groups=incident_id：同一件事不能拆到兩邊 ==")
 print("每件事被記成幾筆告警：", train.groupby("incident_id").size().value_counts().sort_index().to_dict())
 plain = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
 tr_idx, te_idx = next(plain.split(X, y))
@@ -69,9 +66,7 @@ grouped = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=0)
 tr_idx, te_idx = next(grouped.split(X, y, groups=train["incident_id"]))
 shared = set(train["incident_id"].iloc[tr_idx]) & set(train["incident_id"].iloc[te_idx])
 print(f"StratifiedGroupKFold 第 1 折：兩邊都出現的 incident {len(shared)} 件")
-
-print("\n== 6. 不分組會高估多少（梯度提升，AP）==")
 for name, groups, splitter in [("StratifiedKFold", None, plain),
                                ("StratifiedGroupKFold", train["incident_id"], grouped)]:
     ap = cross_validate(boosting(), X, y, groups=groups, cv=splitter, scoring="average_precision")["test_score"]
-    print(f"{name:<21}{ap.mean():.3f} ± {ap.std():.3f}")
+    print(f"{name:<21}梯度提升 AP {ap.mean():.3f} ± {ap.std():.3f}")

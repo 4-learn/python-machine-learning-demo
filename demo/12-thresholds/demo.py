@@ -36,23 +36,13 @@ print("\n== 3. precision_recall_curve：一次掃完所有門檻 ==")
 precision, recall, thresholds = precision_recall_curve(y, score)
 print(f"precision {len(precision)} 個、recall {len(recall)} 個、thresholds {len(thresholds)} 個")
 curve = pd.DataFrame({"threshold": thresholds, "precision": precision[:-1], "recall": recall[:-1]})
-print(f"最後一組：precision {precision[-1]:.3f}、recall {recall[-1]:.3f}（沒有對應的門檻）")
-
-print("\n== 4. 去掉最後一個，三個陣列對齊成一張表 ==")
 print(curve.to_string(index=False, float_format="%.3f"))
 
-print("\n== 5. 選 HIGH：precision >= 0.9 的門檻裡，最低的那個 ==")
-ok = curve[curve["precision"] >= 0.9]
-high = float(ok["threshold"].min())
-print(f"符合的門檻 {len(ok)} 個，HIGH = {high}")
-
-print("\n== 6. 選 LOW：recall >= 0.9（漏掉不超過 10%）的門檻裡，最高的那個 ==")
-ok = curve[curve["recall"] >= 0.9]
-low = float(ok["threshold"].max())
-missed = int(((score < low) & (y == 1)).sum())
-print(f"符合的門檻 {len(ok)} 個，LOW = {low}；低於 LOW 的真事件 {missed} 筆／共 {y.sum()} 筆")
-
-print("\n== 7. 用兩個門檻切三段，寫成設定 ==")
+print("\n== 4. 選 HIGH 和 LOW，切成三段 ==")
+high = float(curve[curve["precision"] >= 0.9]["threshold"].min())
+low = float(curve[curve["recall"] >= 0.9]["threshold"].max())
+print(f"HIGH = {high}（precision >= 0.9 的門檻裡最低的）")
+print(f"LOW  = {low}（recall >= 0.9 的門檻裡最高的）")
 valid["decision"] = pd.cut(score, bins=[-0.01, low, high, 1.01], right=False,
                            labels=["log_only", "require_review", "auto_alert"])
 print(valid.groupby("decision", observed=False)["label"].agg(告警數="count", 其中真的="sum").to_string())

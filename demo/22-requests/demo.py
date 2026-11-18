@@ -1,4 +1,4 @@
-"""22｜requests：把偵測框變成平台格式的事件，POST 到平台，處理狀態碼、錯誤與 timeout。"""
+"""22｜requests：把偵測框變成平台格式的事件，POST 到平台；平台拒收、沒開時也不會當掉。"""
 import json
 import socket
 import sys
@@ -41,35 +41,8 @@ r = requests.post(f"{URL}/events", json=event, headers={"X-API-Key": "wrong-key"
 print(f"錯的 API Key   → {r.status_code} {r.json()['detail']}")
 r = requests.post(f"{URL}/events", json={**event, "event_type": "smoking"}, headers=KEY, timeout=5)
 print(f"不支援的事件類型 → {r.status_code} {r.json()['detail']}")
-print(f"r.ok（狀態碼 2xx 才是 True）：{r.ok}")
 
-print("\n== 4. 信心值決定告警狀態（平台規則 0.8／0.5） ==")
-for conf in [0.962, 0.65, 0.42]:
-    body = requests.post(f"{URL}/events", json={**event, "confidence": conf}, headers=KEY, timeout=5).json()
-    print(f"confidence {conf:.3f} → alert_status {body['alert_status']}")
-
-print("\n== 5. 平台沒回應：timeout ==")
-silent = socket.socket()                      # 接受連線、但永遠不回答的「平台」
-silent.bind(("127.0.0.1", 0))
-silent.listen()
-silent_port = silent.getsockname()[1]
-try:
-    requests.post(f"http://127.0.0.1:{silent_port}/events", json=event, headers=KEY, timeout=0.5)
-except requests.exceptions.Timeout as e:
-    print(f"等了 0.5 秒沒回應 → {type(e).__name__}")
-silent.close()
-
-print("\n== 6. 平台沒開：ConnectionError ==")
-probe = socket.socket()
-probe.bind(("127.0.0.1", 0))
-closed_port = probe.getsockname()[1]
-probe.close()
-try:
-    requests.post(f"http://127.0.0.1:{closed_port}/events", json=event, headers=KEY, timeout=5)
-except requests.exceptions.ConnectionError as e:
-    print(f"連不上 → {type(e).__name__}")
-
-print("\n== 7. 包成一個不會讓偵測器當掉的 send() ==")
+print("\n== 4. 包成一個不會讓偵測器當掉的 send() ==")
 
 
 def send(url, event, api_key="dev-device"):
@@ -80,10 +53,10 @@ def send(url, event, api_key="dev-device"):
     return r.status_code, r.json()
 
 
+probe = socket.socket()                     # 借一個空的 port，關掉，當成「沒開的平台」
+probe.bind(("127.0.0.1", 0))
+closed_port = probe.getsockname()[1]
+probe.close()
 print(f"正常     → {send(URL, event)}")
 print(f"錯的 key → {send(URL, event, api_key='wrong-key')}")
 print(f"平台沒開 → {send(f'http://127.0.0.1:{closed_port}', event)}")
-
-print("\n== 8. GET /alerts：平台開了哪些告警 ==")
-for alert in requests.get(f"{URL}/alerts", timeout=5).json():
-    print(alert)

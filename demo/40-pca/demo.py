@@ -15,28 +15,21 @@ print("explained_variance_ratio_：", pca.explained_variance_ratio_.round(3).tol
 
 print("\n== 2. transform：每個點換成新座標 ==")
 z = pca.transform(pts)
-print(f"原本 {pts.shape} → transform 後 {z.shape}")
 print(pd.DataFrame(np.hstack([pts.to_numpy()[:3], z[:3]]), columns=["x", "y", "pc1", "pc2"]).round(3).to_string(index=False))
 
 alerts = pd.read_csv("story/data/factory/alerts.csv")
 fit = alerts[alerts["occurred_at"] < "2025-12-15"]
 COLS = ["confidence", "duration_seconds", "light_lux", "days_on_site", "prior_alerts_30d", "hour"]
 
-print("\n== 3. 6 個數值欄，沒縮放就 PCA ==")
-print("各欄標準差：")
-print(fit[COLS].std().round(3).to_string())
-raw = PCA(n_components=3).fit(fit[COLS])
-print("explained_variance_ratio_：", raw.explained_variance_ratio_.round(3).tolist())
+print("\n== 3. 告警的 6 個數值欄：沒縮放 vs 先縮放 ==")
+raw = PCA(n_components=6).fit(fit[COLS])
+scaled_X = StandardScaler().fit_transform(fit[COLS])
+scaled = PCA(n_components=6).fit(scaled_X)
+print(f"pc1 留下幾成：沒縮放 {raw.explained_variance_ratio_[0]:.3f}、先縮放 {scaled.explained_variance_ratio_[0]:.3f}")
+print(pd.DataFrame({"標準差": fit[COLS].std(), "沒縮放的pc1": raw.components_[0],
+                    "先縮放的pc1": scaled.components_[0]}, index=COLS).round(3).to_string())
 
-print("\n== 4. 先 StandardScaler 再 PCA ==")
-scaler = StandardScaler().fit(fit[COLS])
-scaled = PCA(n_components=6).fit(scaler.transform(fit[COLS]))
-print("explained_variance_ratio_：", scaled.explained_variance_ratio_.round(3).tolist())
-print("累加：", scaled.explained_variance_ratio_.cumsum().round(3).tolist())
-print("\npc1 的方向（每一欄占多少）：")
-print(pd.DataFrame({"沒縮放": raw.components_[0], "先縮放": scaled.components_[0]}, index=COLS).round(3).to_string())
-
-print("\n== 5. PCA 沒看標籤：fit 只給 X，事後再拿 label 對照 ==")
-z = PCA(n_components=2).fit_transform(scaler.transform(fit[COLS]))
+print("\n== 4. PCA 沒看標籤：fit 只給 X，事後再拿 label 對照 ==")
+z = PCA(n_components=2).fit_transform(scaled_X)
 out = pd.DataFrame(z, columns=["pc1", "pc2"]).assign(label=fit["label"].to_numpy())
 print(out.groupby("label")[["pc1", "pc2"]].mean().round(3).to_string())

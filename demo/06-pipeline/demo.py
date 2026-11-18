@@ -17,26 +17,20 @@ past = pd.DataFrame({
 new = pd.DataFrame({"confidence": [0.90], "duration_seconds": [50], "days_on_site": [1450],
                     "location": ["aisle_01"]}, index=["新告警 N1"])
 
-print("== 1. StandardScaler：fit 記下平均與標準差 ==")
+print("== 1. StandardScaler：換成「離平均幾個標準差」 ==")
 NUM = ["confidence", "duration_seconds", "days_on_site"]
 scaler = StandardScaler().fit(past[NUM])
 z_past = scaler.transform(past[NUM])
 z_new = scaler.transform(new[NUM])
 print(pd.DataFrame({"mean_": scaler.mean_, "scale_": scaler.scale_}, index=NUM).to_string(float_format="%.3f"))
-
-print("\n== 2. transform：每一欄變成「離平均幾個標準差」 ==")
-z = pd.DataFrame(z_past, columns=NUM, index=past.index).round(3)
-print(z.head(4).to_string())
 print("新告警 N1 →", z_new.round(3)[0])
-
-print("\n== 3. 縮放後，N1 的鄰居回來了 ==")
 for name, X_past, X_new in [("未縮放", past[NUM], new[NUM]),
                             ("縮放後", z_past, z_new)]:
     knn = KNeighborsClassifier(n_neighbors=3).fit(X_past, past["label"])
     _, idx = knn.kneighbors(X_new)
     print(f"{name}：鄰居 {', '.join(past.index[idx[0]])} → predict {knn.predict(X_new)[0]}")
 
-print("\n== 4. OneHotEncoder：一個類別變成一欄 0／1 ==")
+print("\n== 2. OneHotEncoder：一個類別變成一欄 0／1 ==")
 enc = OneHotEncoder(handle_unknown="ignore").fit(past[["location"]])
 test_loc = pd.DataFrame({"location": ["dock_01", "aisle_03"]})
 onehot = enc.transform(test_loc).toarray()
@@ -44,24 +38,12 @@ print("學到的類別：", list(enc.categories_[0]))
 print(pd.DataFrame(onehot, columns=enc.get_feature_names_out(),
                    index=test_loc["location"]).astype(int).to_string())
 
-print("\n== 5. ColumnTransformer：數值欄縮放、類別欄 one-hot ==")
+print("\n== 3. ColumnTransformer＋make_pipeline：前處理和模型接成一條 ==")
 pre = ColumnTransformer([("num", StandardScaler(), NUM),
                          ("cat", OneHotEncoder(handle_unknown="ignore"), ["location"])])
-out = pre.fit_transform(past)
-names = pre.get_feature_names_out()
-print(f"輸入 {past[NUM + ['location']].shape[1]} 欄 → 輸出 {out.shape[1]} 欄")
-print(", ".join(names))
-
-print("\n== 6. make_pipeline：前處理和模型接成一條 ==")
 pipe = make_pipeline(pre, KNeighborsClassifier(n_neighbors=3)).fit(past, past["label"])
 pred = pipe.predict(new)
-print("步驟：", " → ".join(pipe.named_steps))
+names = pre.get_feature_names_out()
+print(f"輸入 {past[NUM + ['location']].shape[1]} 欄 → 輸出 {len(names)} 欄")
+print(", ".join(names))
 print("N1 →", pred[0])
-
-print("\n== 7. 切割前 fit_transform：valid 的資訊混進 fit ==")
-df = pd.read_csv("story/data/care/alerts.csv", parse_dates=["occurred_at"])
-fit = df[df["occurred_at"] < "2025-12-15"]
-fit_valid = df[df["occurred_at"] < "2025-12-29"]
-for name, part in [("只用 fit（正確）", fit), ("fit＋valid 一起（錯）", fit_valid)]:
-    s = StandardScaler().fit(part[["light_lux", "prior_alerts_30d"]])
-    print(f"{name}：平均 light_lux {s.mean_[0]:.3f}、prior_alerts_30d {s.mean_[1]:.3f}")

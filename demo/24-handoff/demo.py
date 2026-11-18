@@ -42,28 +42,14 @@ print(f"原本：{first[:16]}…")
 print(f"改後：{second[:16]}…")
 print(f"64 個字元裡，相同位置一樣的有 {sum(a == b for a, b in zip(first, second))} 個")
 
-print("\n== 4. 內容一樣、寫法不同（小數補到 2 位），指紋也不同 ==")
-other = OUT / "eval-set-format.csv"
-exam.to_csv(other, index=False, lineterminator="\n", float_format="%.2f")
-same_table = pd.read_csv(other).equals(pd.read_csv(path))
-print(f"讀回來的表相同：{same_table}；指紋相同：{sha256(other) == first}")
-
-print("\n== 5. 大檔案分段餵：update() 的結果和一次算一樣 ==")
-h = hashlib.sha256()
-with open(path, "rb") as f:
-    for chunk in iter(lambda: f.read(64), b""):
-        h.update(chunk)
-print(f"分段：{h.hexdigest() == first}")
-print(f"文字要先 encode：{hashlib.sha256('should_alert'.encode('utf-8')).hexdigest()[:16]}…")
-
-print("\n== 6. json.dumps：把指紋寫成 manifest.json ==")
+print("\n== 4. json.dumps：把指紋寫成 manifest.json ==")
 manifest = {"line": "factory", "images": len(exam), "should_alert": int(exam["should_alert"].sum()),
             "eval_set_sha256": first}
 (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
 print((OUT / "manifest.json").read_text(encoding="utf-8"))
 
-print("\n== 7. 收到交接包的人：重算一次，和 manifest 比 ==")
+print("\n== 5. 收到交接包的人：重算一次，和 manifest 比 ==")
 received = json.loads((OUT / "manifest.json").read_text(encoding="utf-8"))
-for candidate in [path, tampered, other]:
+for candidate in [path, tampered]:
     ok = sha256(candidate) == received["eval_set_sha256"]
     print(f"{candidate.name:<22} {'相符，可以用' if ok else '對不上，不要用'}")
