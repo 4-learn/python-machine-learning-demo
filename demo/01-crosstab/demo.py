@@ -21,3 +21,9 @@ print(pd.crosstab(alerts["decision"], alerts["status"]).to_string())
 
 print("\n== 4. margins=True：加上合計 ==")
 print(pd.crosstab(alerts["decision"], alerts["status"], margins=True, margins_name="合計"))
+
+print("\n== 5. 換成平台真的資料：10 週、3540 筆 ==")
+df = pd.read_csv("story/data/factory/alerts.csv")
+df["decision"] = pd.cut(df["confidence"], bins=[0, 0.5, 0.8, 1.01], right=False,
+                        labels=["log_only", "require_review", "auto_alert"])
+print(pd.crosstab(df["decision"], df["status"], margins=True, margins_name="合計"))
