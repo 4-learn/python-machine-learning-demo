@@ -2,7 +2,6 @@
 
 執行（在這個資料夾裡）：
     LINE=factory python judge.py     # 工廠線
-    LINE=care python judge.py        # 健康線
 """
 import json
 import math
