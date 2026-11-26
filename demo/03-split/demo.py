@@ -24,8 +24,12 @@ train_ids = set(df.loc[X_train.index, "incident_id"])
 test_ids = set(df.loc[X_test.index, "incident_id"])
 print(f"test 有 {len(test_ids)} 件事，其中 {len(train_ids & test_ids)} 件在 train 也看得到")
 cols = ["alert_id", "incident_id", "confidence", "duration_seconds", "light_lux", "label", "side"]
+# 新增一個欄位， side，預設值是 train
 df["side"] = "train"
+# df.loc[資料列索引, 欄位名稱] = 值
+# 把 test 的資料列索引對應的 side 欄位改成 test
 df.loc[X_test.index, "side"] = "test"
+# 印出同一件事被切到兩邊的資料
 print(df.loc[df["incident_id"] == "I00142", cols].to_string(index=False))
 
 print("\n== 3. 用時間切：前 6 週學，第 7–8 週考 ==")

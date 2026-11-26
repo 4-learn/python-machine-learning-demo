@@ -3,7 +3,13 @@
 執行（在這個資料夾裡）：
     LINE=factory python judge.py     # 工廠線
     LINE=care python judge.py        # 健康線
+
+== factory：成績表（valid）==
+         model  accuracy  precision  recall  alerts
+           多數類     0.856      0.000   0.000       0
+平台規則 conf>=0.8     0.883      0.629   0.458      70
 """
+
 import json
 import math
 import os
