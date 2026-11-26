@@ -11,9 +11,9 @@ dummy = DummyClassifier(strategy="most_frequent")
 dummy.fit(X, y)
 print("predict：", dummy.predict(X).tolist())
 
-# 用工廠線的告警示範 DummyClassifier
+# 用同樣 10 筆告警，算三個分數
 print("\n== 2. 三個分數 ==")
-# 多數類 baseline
+# 平台規則：信心值 0.8 以上就叫
 rule = (X["confidence"] >= 0.8).astype(int)
 
 # 計算三個分數
@@ -41,6 +41,8 @@ X_valid, y_valid = valid[["confidence"]], valid["label"]
 model = DummyClassifier(strategy="most_frequent").fit(X_fit, y_fit)
 
 pred = model.predict(X_valid)
-print(f"valid {len(valid)} 筆，真的要叫人 {y_valid.sum()} 筆（{y_valid.mean():.3f}）")
-print(f"多數類：叫人 {pred.sum()} 次  accuracy {accuracy_score(y_valid, pred):.3f}  "
-      f"precision {precision_score(y_valid, pred, zero_division=0):.3f}  recall {recall_score(y_valid, pred):.3f}")
+print("valid", len(valid), "筆，真的要叫人", y_valid.sum(), "筆，比例", round(y_valid.mean(), 3))
+print("多數類：叫人", pred.sum(), "次",
+      "accuracy", round(accuracy_score(y_valid, pred), 3),
+      "precision", round(precision_score(y_valid, pred, zero_division=0), 3),
+      "recall", round(recall_score(y_valid, pred), 3))
