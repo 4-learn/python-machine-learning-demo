@@ -16,7 +16,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
@@ -98,8 +97,6 @@ def model_rows(fit, valid):
     rows.append(score_row("KNN 未縮放", y_valid, knn_raw.predict(valid[NUMERIC])))
     knn = make_pipeline(make_preprocessor(), KNeighborsClassifier(n_neighbors=15)).fit(X_fit, y_fit)
     rows.append(score_row("KNN", y_valid, knn.predict(X_valid)))
-    logreg = make_pipeline(make_preprocessor(), LogisticRegression(max_iter=1000)).fit(X_fit, y_fit)
-    rows.append(score_row("邏輯迴歸", y_valid, logreg.predict(X_valid)))
     for name, model in candidate_models().items():
         model.fit(X_fit, y_fit)
         rows.append(score_row(name, y_valid, model.predict(X_valid)))
