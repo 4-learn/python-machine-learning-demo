@@ -2,7 +2,6 @@
 
 執行（在這個資料夾裡）：
     LINE=factory python detector.py     # 工廠線：沒戴安全帽
-    LINE=care python detector.py        # 健康線：倒在地上
 """
 import json
 import os
