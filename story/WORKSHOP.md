@@ -153,3 +153,99 @@ RuntimeError: 模型檔和設定檔對不上，拒絕啟動
 ```
 
 解釋：模型檔只多了 2 個 byte，指紋就完全不同。平台讀檔前先比指紋，對不上就停，不會用到被改過或壞掉的模型。重跑一次 `python judge.py` 就會恢復。
+
+---
+
+# YOLO（10–14）
+
+偵測器的程式叫 `detector.py`，複製時要複製整個資料夾裡的 `.py`（13、14 還需要 `judge.py`）：
+
+```bash
+mkdir -p story/my
+cp story/v20-yolo/*.py story/my/   # 換成該份的資料夾
+cd story/my
+LINE=factory python detector.py
+```
+
+| 份 | Workshop-1 執行 |
+|---|---|
+| 10 | `story/v20-yolo/detector.py` |
+| 11 | `story/v21-iou/detector.py` |
+| 12 | `story/v22-requests/detector.py` |
+| 13 | `story/v23-workshop2/detector.py` |
+| 14 | `story/v24-handoff/detector.py` |
+
+## 10｜換成沒學過安全帽的模型
+
+改：`load_detector()` 裡的 `f"{LINE}-yolo11n.pt"` 改成 `"yolo11n.pt"`（官方通用模型，還沒用我們的照片微調）。
+
+結果：
+
+```
+== factory：YOLO 偵測器（類別 {0: 'person', 1: 'bicycle', 2: 'car', ...（共 80 類）}）==
+Empty DataFrame
+```
+
+解釋：通用模型認得 80 類日常物件，但沒有 helmet、head，在我們的合成照片上一個框都找不到。教師的偵測器是拿通用模型、用 240 張照片再訓練 30 輪（微調），才學會這兩類。
+
+## 11｜「算抓到」的標準變嚴
+
+改：`match` 的 `iou_min=0.5` 改成 `0.95`，再試 `0.97`。
+
+結果（val，偵測門檻 0.9）：
+
+| iou_min | TP | FP | FN | precision | recall |
+|---|---:|---:|---:|---:|---:|
+| 0.5（原本） | 54 | 0 | 0 | 1.0 | 1.0 |
+| 0.95 | 47 | 7 | 7 | 0.87 | 0.87 |
+| 0.97 | 14 | 40 | 40 | 0.259 | 0.259 |
+
+解釋：偵測器的框其實都很準（差不到 1 個像素），用 0.5 看不出差別。標準拉到 0.97，幾乎要完全重合才算，原本抓到的框也被判成「位置不對」：一個框變成 FP、對應的標註變成 FN，所以 FP 和 FN 一起增加。IoU 門檻是人定的尺，不是模型的能力。
+
+## 12｜偵測門檻放很低
+
+改：`main` 裡 `to_events(..., PROFILE["detector_conf"])` 改成 `to_events(..., 0.02)`。
+
+結果：
+
+| 偵測門檻 | 事件 | open | 只記錄 |
+|---|---:|---:|---:|
+| 0.9（原本） | 33 | 33 | 0 |
+| 0.02 | 37 | 33 | 4 |
+
+解釋：門檻放低，多送出 4 筆信心值很低的事件。平台照 02 的 0.8／0.5 規則，信心值低於 0.5 的只記錄，不會叫人。偵測器多送，平台還會再擋一次。
+
+## 13｜判斷器的 HIGH 調高
+
+先跑一次 `LINE=factory python detector.py`，會在 `story/my/out/factory/judge.json` 存出判斷器設定。
+改：把 `judge.json` 的 `"high": 0.807` 改成 `0.95`，再跑一次。
+
+結果：
+
+| | 馬上通知 | 其中該叫 | 待確認 | 漏掉 |
+|---|---:|---:|---:|---:|
+| 平台規則 | 33 | 20 | 0 | 0 |
+| 判斷器（HIGH 0.807，原本） | 22 | 19 | 11 | 0 |
+| 判斷器（HIGH 0.95） | 17 | 16 | 16 | 0 |
+
+解釋：HIGH 越高，要非常有把握才馬上通知，所以馬上通知變少、待確認變多。漏掉還是 0，因為多出來的都進了「待確認」，有人會看。這就是 08 的 HIGH：調的是「自動叫人」和「人工確認」之間的分界。
+（判斷器設定檔被改過，`sha256_12` 只比對模型檔，所以照樣能讀。恢復：刪掉 `out/` 再跑一次。）
+
+## 14｜改考卷一個字
+
+先跑一次 `LINE=factory python detector.py`，產生 `handoff/factory/` 交接包。
+改：把 `eval-set.csv` 最後一列結尾的 `,0` 改成 `,1`（最後一張照片的答案），再重算指紋：
+
+```bash
+python -c "import hashlib,json; m=json.load(open('handoff/factory/manifest.json')); h=hashlib.sha256(open('handoff/factory/eval-set.csv','rb').read()).hexdigest(); print('相符' if h==m['eval_set_sha256'] else '對不上')"
+```
+
+結果：
+
+```
+manifest 3734f19f1a32
+重算     925e26e67f2a
+對不上
+```
+
+解釋：只改了一個數字，指紋就完全不同。接手的人一算就知道考卷被動過，這份考卷算出來的分數不能拿來比。
