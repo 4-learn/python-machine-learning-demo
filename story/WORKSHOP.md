@@ -175,18 +175,31 @@ LINE=factory python detector.py
 | 13 | `story/v23-workshop2/detector.py` |
 | 14 | `story/v24-handoff/detector.py` |
 
-## 10｜換成沒學過安全帽的模型
+## 10｜門檻調低，模型開始亂猜
 
-改：`load_detector()` 裡的 `f"{LINE}-yolo11n.pt"` 改成 `"yolo11n.pt"`（官方通用模型，還沒用我們的照片微調）。
+改：用官方模型偵測 ultralytics 內建的 `zidane.jpg`，`conf` 從 0.25 改成 0.01。
+
+```python
+from ultralytics import YOLO
+from ultralytics.utils import ASSETS
+model = YOLO("models/yolo11n.pt")
+r = model.predict(str(ASSETS / "zidane.jpg"),
+                  conf=0.25, verbose=False)[0]
+print(len(r.boxes),
+      [model.names[int(c)] for c in r.boxes.cls])
+# 跑一次，再把 conf 改成 0.01 跑一次
+```
 
 結果：
 
-```
-== factory：YOLO 偵測器（類別 {0: 'person', 1: 'bicycle', 2: 'car', ...（共 80 類）}）==
-Empty DataFrame
-```
+| conf | 框數 | 找到的類別 |
+|---|---:|---|
+| 0.25（原本） | 3 | person 2、tie 1 |
+| 0.01 | 47 | person 18、tie 17、cell phone 10、toothbrush 1、pizza 1 |
 
-解釋：通用模型認得 80 類日常物件，但沒有 helmet、head，在我們的合成照片上一個框都找不到。教師的偵測器是拿通用模型、用 240 張照片再訓練 30 輪（微調），才學會這兩類。
+解釋：門檻是「信心值多少以上的框才留下」。門檻 0.01 時，模型連只有一點點像的地方也畫框，所以同一個人被框好幾次，還冒出手機、牙刷、披薩這些照片裡根本沒有的東西。多出來的 44 個框，信心值都很低，是模型在猶豫的地方。11 會在 val 上自己選一個門檻，不再用 0.25 這個預設值。
+
+（10 前面的「官方模型找不到安全帽」可以自己跑 `python demo/20-yolo/coco_vs_helmet.py` 看。）
 
 ## 11｜「算抓到」的標準變嚴
 
