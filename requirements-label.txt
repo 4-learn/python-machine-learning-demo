@@ -1,0 +1,12 @@
+# 10｜標註工具 Label Studio：另開一個虛擬環境安裝（約 800 MB）
+# 不能和 requirements.txt 裝在同一個環境：兩邊要的 requests 版本衝突，會裝不起來。
+#
+#   python3 -m venv .venv-label
+#   source .venv-label/bin/activate          # Windows：.venv-label\Scripts\Activate.ps1
+#   pip install -r requirements-label.txt
+#   label-studio start
+#
+# sentry-sdk 要鎖在 3 以下：沒鎖的話會裝到 3.x，label-studio 啟動時出現
+#   TypeError: Unknown option 'send_default_pii'
+label-studio==1.23.2
+sentry-sdk==2.77.0
