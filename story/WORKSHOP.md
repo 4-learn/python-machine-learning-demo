@@ -188,6 +188,30 @@ Empty DataFrame
 
 解釋：通用模型認得 80 類日常物件，但沒有 helmet、head，在我們的合成照片上一個框都找不到。教師的偵測器是拿通用模型、用 240 張照片再訓練 30 輪（微調），才學會這兩類。
 
+## 10｜自己畫框（Label Studio）
+
+Workshop-1：照 `story/data/factory/label_me/README.md` 標完 10 張，匯出 YOLO with Images，跑：
+
+```bash
+python demo/20-yolo/check_labels.py story/my/labels-export
+python demo/20-yolo/train_mine.py
+```
+
+`check_labels.py` 印出「畫對 18／18 個框」最好；有錯也照樣能訓練，截圖上傳就給分。
+
+Workshop-2（加分題）：故意把 `train_006` 那個沒戴帽的頭（head）畫得很鬆，重新匯出、再跑一次 `check_labels.py`。
+
+實際結果（框放大成 1.35 倍、1.6 倍）：
+
+| 框的大小 | IoU | check_labels.py 的判斷 |
+|---|---:|---|
+| 貼著頭 | 約 1.0 | 全對 |
+| 放大 1.35 倍 | 0.55 | 框不夠貼，算對但可以更緊 |
+| 放大 1.6 倍 | 0.39 | 框太鬆，不到 0.5，不算畫對 |
+
+解釋：IoU 是「兩個框重疊的面積 ÷ 合起來的面積」。框畫得越鬆，多出來的空白越多，IoU 就越低。低於 0.5 就不算畫對，因為訓練時模型會照這個鬆垮的框學，以後畫出來的框也會鬆。標註畫得好不好，決定模型的上限。11 會用同一把尺來量偵測器的框。
+
+
 ## 11｜「算抓到」的標準變嚴
 
 改：`match` 的 `iou_min=0.5` 改成 `0.95`，再試 `0.97`。

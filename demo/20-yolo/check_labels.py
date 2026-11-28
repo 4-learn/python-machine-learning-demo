@@ -5,7 +5,7 @@
 
 做三件事：
   1. 讀 classes.txt，把類別編號換回課程的順序（0 helmet、1 head）
-  2. 每張照片的框和標準答案配對，算 IoU（11 學的），列出漏畫、多畫、畫歪的框
+  2. 每張照片的框和標準答案配對，算 IoU（兩個框重疊多少，11 會詳細教），列出漏畫、多畫、選錯、畫太鬆的框
   3. 寫出 story/my/labels-mine/：images、labels、data.yaml，給 train_mine.py 訓練
 """
 import shutil
@@ -58,10 +58,13 @@ def main(export):
                 ok += 1
                 used.add(best)
                 if score < 0.8:
-                    notes.append(f"{NAMES[c]} 畫歪了（IoU {score:.2f}）")
+                    notes.append(f"{NAMES[c]} 框不夠貼（IoU {score:.2f}），算對但可以更緊")
             elif score >= 0.5:
                 used.add(best)
                 notes.append(f"類別選錯：應該是 {NAMES[c]}，畫成 {NAMES[mine[best][0]]}")
+            elif score > 0:
+                used.add(best)
+                notes.append(f"{NAMES[c]} 框太鬆或太偏（IoU {score:.2f}，不到 0.5），不算畫對")
             else:
                 notes.append(f"漏畫一個 {NAMES[c]}")
         notes += [f"多畫一個 {NAMES[mine[j][0]]}" for j in range(len(mine)) if j not in used]
