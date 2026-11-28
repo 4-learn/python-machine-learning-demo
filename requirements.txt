@@ -13,12 +13,14 @@ scikit-learn==1.9.1
 scipy==1.17.1
 joblib==1.6.0
 
-# 16–24 節：影像、PyTorch、YOLO、送事件
+# 16–24 節：影像、PyTorch、YOLO、送事件、自己架平台（FastAPI）
 pillow==12.3.0
 torch==2.14.1
 torchvision==0.29.1
 ultralytics==8.4.173
 requests==2.34.2
+fastapi==0.165.0
+uvicorn==0.54.0
 
 # 25–42 節（AI 新秀）：OpenCV（ultralytics 也會用到）、pytest
 opencv-python==5.0.0.93
